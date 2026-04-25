@@ -3,121 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ciber-Tabuleiro Pro</title>
+    <title>Neon Blocks - F00XGAMES</title>
     <style>
-        :root { --main-color: #00ffff; --bg-dark: #02111a; }
+        :root { 
+            --main-color: #00ffff; 
+            --bg-dark: #02111a; 
+            --glass: rgba(0, 40, 60, 0.4);
+        }
+        
         body {
             background: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif;
             display: flex; flex-direction: column; align-items: center;
             margin: 0; overflow: hidden; touch-action: none; height: 100vh;
-            justify-content: center; transition: background 1s ease;
+            justify-content: center; transition: background 1.5s ease-in-out;
         }
 
-        body.flash { animation: screenFlash 0.15s; }
-        @keyframes screenFlash {
-            0% { background: #ffffff; }
-            100% { background: var(--bg-dark); }
+        .neon-brand {
+            font-size: 18px; font-weight: bold; color: #fff; text-transform: uppercase;
+            letter-spacing: 4px; text-shadow: 0 0 10px var(--main-color);
+            margin: 10px 0; animation: brandPulse 2s infinite alternate;
+        }
+        @keyframes brandPulse { 
+            from { opacity: 0.6; transform: scale(0.95); } 
+            to { opacity: 1; transform: scale(1); } 
         }
 
         #game-container {
             display: flex; flex-direction: column;
-            background-color: rgba(220, 220, 220, 0.1);
-            border-radius: 15px; padding: 10px;
-            width: 100%; max-width: 360px;
-            margin: 0 auto; box-sizing: border-box;
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 15px; border: 1px solid rgba(0,255,255,0.2);
+            width: 95%; max-width: 360px; box-sizing: border-box;
         }
 
-  .game-canvas {
-            width: 320px; height: 320px;
-            margin-left: auto; margin-right: auto; display: block;
-            background: rgba(0,0,0,0.5); border: 2px solid #333;
-            border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        canvas {
+            width: 310px; height: 310px; margin: 0 auto; display: block;
+            background: rgba(0,0,0,0.6); border: 2px solid #333;
+            border-radius: 12px; transition: border-color 0.3s;
         }
 
-        #ui-container { margin: 10px 0; text-align: center; width: 100%; z-index: 10; }
-  .score-panel {
-            background: rgba(0, 40, 60, 0.4); backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 15px;
-            padding: 10px; margin: 5px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
-        }
-  .stats-row { display: flex; justify-content: center; gap: 20px; }
-  .stat-val { color: var(--main-color); font-weight: bold; font-size: 18px; }
+        .score-panel { text-align: center; margin-bottom: 10px; }
+        .stats-row { display: flex; justify-content: center; gap: 30px; }
+        .stat-val { color: var(--main-color); font-weight: bold; font-size: 24px; transition: color 0.3s; }
 
-  .pieces-selector { display: flex; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 15px; justify-content: center; }
-  .slot { width: 90px; height: 90px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; }
-  .disabled { opacity: 0.2; filter: grayscale(1); }
+        .pieces-selector { 
+            display: flex; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.4); 
+            padding: 12px; border-radius: 18px; justify-content: center;
+        }
+        .slot { width: 85px; height: 85px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px dashed #444; display: flex; align-items: center; justify-content: center; }
+        .disabled { opacity: 0.15; filter: grayscale(1); }
 
         #start-screen, #game-over {
-            position: fixed; inset: 0; background: rgba(2, 17, 26, 0.95);
+            position: fixed; inset: 0; background: radial-gradient(circle, #0a2a3a 0%, #02111a 100%);
             z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            overflow: hidden;
         }
 
-        #falling-blocks {
-            position: absolute; inset: 0; z-index: 0;
-            pointer-events: none;
-        }
-   .falling-block {
-            position: absolute; width: 40px; height: 40px;
-            opacity: 0.3; animation: fall linear infinite;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.3; }
-            90% { opacity: 0.3; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-        }
-
-        #start-content {
-            position: relative; z-index: 1; text-align: center;
-        }
-
-  .btn {
+        .btn {
             background: linear-gradient(45deg, #00ffff, #0080ff); color: #000;
-            border: none; padding: 15px 40px; font-size: 18px; font-weight: bold;
-            border-radius: 50px; cursor: pointer; box-shadow: 0 5px 15px rgba(0,255,255,0.4);
+            border: none; padding: 16px 45px; font-size: 18px; font-weight: bold;
+            border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px rgba(0,255,255,0.4);
         }
 
-        #level-complete {
-            position: fixed; inset: 0; z-index: 999;
-            display: none; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
-        }
-        #level-complete-text {
-            font-size: 32px; font-weight: bold; color: var(--main-color);
-            text-shadow: 0 0 20px var(--main-color);
-            animation: popIn 0.5s ease-out;
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        #mission-bar { margin-top: 8px; font-size: 16px; font-weight: bold; color: #ffd700; }
     </style>
 </head>
 <body>
 
 <div id="start-screen">
-    <div id="falling-blocks"></div>
-    <div id="start-content">
-        <h1 style="color:var(--main-color); letter-spacing:2px; text-shadow: 0 0 20px var(--main-color);">CIBER-TABULEIRO</h1>
-        <p id="menu-best">RECORDE: 0</p>
-        <button class="btn" onclick="initGame()">INICIAR JOGO</button>
-    </div>
+    <h1 style="color:var(--main-color); font-size: 36px; text-shadow: 0 0 20px var(--main-color); text-align: center;">NEON<br>GRIDLOCK</h1>
+    <p id="menu-best">RECORDE: 0</p>
+    <button class="btn" onclick="initGame()">INICIAR</button>
+    <div class="neon-brand">F00XGAMES</div>
 </div>
 
 <div id="game-container">
-    <div id="ui-container">
-        <div class="score-panel">
-            <div id="info" style="font-size: 12px; opacity: 0.7;">NÍVEL 1</div>
-            <div class="stats-row">
-                <div>PONTOS: <span id="score" class="stat-val">0</span></div>
-                <div>RECORDE: <span id="best" class="stat-val">0</span></div>
-            </div>
-            <div id="mission-bar" style="margin-top: 5px; font-size: 18px;"></div>
+    <div class="score-panel">
+        <div id="info" style="font-size: 11px; opacity: 0.6; letter-spacing: 2px;">SISTEMA INICIALIZADO</div>
+        <div class="stats-row">
+            <div>SCORE<br><span id="score" class="stat-val">0</span></div>
+            <div>BEST<br><span id="best" class="stat-val">0</span></div>
         </div>
+        <div id="mission-bar"></div>
     </div>
 
-    <canvas id="gameCanvas" class="game-canvas" width="320" height="320"></canvas>
+    <canvas id="gameCanvas" width="320" height="320"></canvas>
 
     <div class="pieces-selector">
         <div id="slot0" class="slot"></div>
@@ -126,482 +94,266 @@
     </div>
 </div>
 
-<div id="level-complete">
-    <div id="level-complete-text">FASE CONCLUÍDA 1★</div>
-</div>
-
 <div id="game-over" style="display:none;">
-    <h2 style="color:#ff4444;">FIM DE JOGO</h2>
-    <p id="final-score">Pontuação: 0</p>
+    <h2 style="color:#ff4444; font-size: 40px; text-shadow: 0 0 15px red;">GAME OVER</h2>
+    <p id="final-score" style="font-size: 22px;"></p>
     <button class="btn" onclick="location.reload()">RECOMEÇAR</button>
+    <div class="neon-brand" style="margin-top: 30px;">F00XGAMES</div>
 </div>
 
+<script src="cordova.js"></script>
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
 
-    const imgBtn = new Image(); imgBtn.src = './assets/bloco.png';
-    const imgStar = new Image(); imgStar.src = './assets/estrela.png';
-    const imgFire = new Image(); imgFire.src = './assets/fogo.png';
-    const imgThunder = new Image(); imgThunder.src = './assets/raio.png';
+    const imgBtn = new Image(); imgBtn.src = 'assets/bloco.png';
+    const imgStar = new Image(); imgStar.src = 'assets/estrela.png';
+    const imgFire = new Image(); imgFire.src = 'assets/fogo.png';
+    const imgThunder = new Image(); imgThunder.src = 'assets/raio.png';
     const imgMap = { "⭐": imgStar, "🔥": imgFire, "⚡": imgThunder };
-
-    let imagesLoaded = 0;
-    [imgBtn, imgStar, imgFire, imgThunder].forEach(img => {
-        img.onload = () => {
-            imagesLoaded++;
-            if(imagesLoaded === 4) createFallingBlocks();
-            renderUI();
-        };
-    });
 
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, best = localStorage.getItem('blockBest') || 0;
     let missionGoals = {}, missionCollected = {};
-    let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = -1000, mY = -1000;
-    let moved = false, touchT = 0, audioCtx, bgMusicTimeout = null;
-
+    let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0;
+    let moved = false, touchT = 0, particles = [], comboTexts = [];
+    
+    // SISTEMA DE COMBO
     let comboCount = 0, comboTimer = 0;
-    const comboMaxTime = 600;
-    let comboTexts = [];
-    let boardFlashTimer = 0;
-    let flashTimer = 0;
-    let particles = [];
+    const comboMaxTime = 600; 
+    let shakeIntensity = 0;
 
-    const levelColors = [
-        '#02111a', '#03121b', '#04131c', '#05141d', '#06151e',
-        '#07161f', '#081720', '#091821', '#0a1922', '#0b1a23'
-    ];
-
-    const icons = { star: "⭐", fire: "🔥", thunder: "⚡" };
     const shapes = [[[1,1],[1,1]], [[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1,0],[0,1,1]], [[1,0,0],[1,1,1]], [[1]]];
-    const comboPhrases = ["BOM!", "MUITO BOM!", "EXCELENTE!", "INCRÍVEL!", "LENDÁRIO!", "DEUS!", "IMPARÁVEL!"];
+    const comboPhrases = ["BOM!", "ENERGIA!", "TURBO!", "INCRÍVEL!", "LENDÁRIO!", "DEUS!"];
 
     document.getElementById('best').innerText = best;
     document.getElementById('menu-best').innerText = "RECORDE: " + best;
 
-    function createFallingBlocks() {
-        const container = document.getElementById('falling-blocks');
-        if(container.children.length > 0) return;
-        const imgs = ['./assets/bloco.png', './assets/estrela.png', './assets/fogo.png', './assets/raio.png'];
-        for(let i = 0; i < 12; i++) {
-            const block = document.createElement('img');
-            block.className = 'falling-block';
-            block.src = imgs[Math.floor(Math.random() * imgs.length)];
-            block.style.left = Math.random() * 100 + '%';
-            block.style.animationDuration = (4 + Math.random() * 3) + 's';
-            block.style.animationDelay = Math.random() * 4 + 's';
-            container.appendChild(block);
-        }
-    }
-
     function getComboColor() {
-        const colors = ["#00ff41", "#00ffff", "#ffff00", "#ff00ff", "#ff4400", "#0080ff"];
-        return colors[comboCount % colors.length];
-    }
-
-    // MÚSICA CALMA CORRIGIDA - LOOP SIMPLES
-    function startBgMusic() {
-        if (!audioCtx || bgMusicTimeout) return;
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.02;
-        gain.connect(audioCtx.destination);
-
-        const notes = [130.81, 146.83, 164.81, 174.61, 196.00, 174.61, 164.81, 146.83];
-        let idx = 0;
-
-        function loopNote() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = notes[idx];
-            osc.connect(gain);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.8);
-            idx = (idx + 1) % notes.length;
-            bgMusicTimeout = setTimeout(loopNote, 1000);
-        }
-        loopNote();
-    }
-
-    function playSound(freq, duration, type = 'sine', vol = 0.1) {
-        if (!audioCtx) return;
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = type;
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + duration);
-    }
-
-    function playPlucSound() {
-        playSound(800, 0.08, 'sine', 0.15);
-        setTimeout(() => playSound(1200, 0.05, 'sine', 0.1), 30);
-    }
-
-    function playPanSound() {
-        playSound(200, 0.15, 'square', 0.12);
-        setTimeout(() => playSound(150, 0.1, 'square', 0.1), 50);
-    }
-
-    function playBlockExplosionSound() {
-        playSound(400, 0.1, 'sawtooth', 0.15);
-        setTimeout(() => playSound(300, 0.15, 'triangle', 0.12), 50);
-        setTimeout(() => playSound(200, 0.2, 'sine', 0.1), 100);
+        if (comboCount === 0) return "#00ffff";
+        return `hsl(${(comboCount * 60) % 360}, 100%, 60%)`;
     }
 
     function initGame() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         document.getElementById('start-screen').style.display = 'none';
-        startBgMusic();
         setupLevel();
         requestAnimationFrame(loop);
     }
 
     function setupLevel() {
-        missionGoals = {}; missionCollected = {};
-        missionGoals[icons.star] = 3 + Math.floor(level * 1.5);
-        if(level >= 3) missionGoals[icons.fire] = 2 + level;
-        for (let key in missionGoals) missionCollected[key] = 0;
         grid = Array(8).fill().map(() => Array(8).fill(0));
-
-        const bgColor = levelColors[Math.min(level - 1, levelColors.length - 1)];
-        document.body.style.background = bgColor;
-        document.documentElement.style.setProperty('--bg-dark', bgColor);
-
+        missionGoals = { "⭐": 5 + (level * 2) };
+        if(level >= 2) missionGoals["🔥"] = 3 + level;
+        if(level >= 4) missionGoals["⚡"] = 2 + level;
+        
+        for (let k in missionGoals) missionCollected[k] = 0;
+        
+        // MUDA O FUNDO POR FASE
+        const hues = [190, 280, 210, 140, 40, 0];
+        const currentHue = hues[(level - 1) % hues.length];
+        document.body.style.background = `radial-gradient(circle at center, hsl(${currentHue}, 60%, 8%) 0%, #01080d 100%)`;
+        
+        document.getElementById('info').innerText = "FASE " + level;
         newSet();
     }
 
-    function showLevelComplete() {
-        const el = document.getElementById('level-complete');
-        const txt = document.getElementById('level-complete-text');
-        const stars = level <= 3? level : 3;
-        txt.innerText = `FASE CONCLUÍDA ${level}${'★'.repeat(stars)}`;
-        el.style.display = 'flex';
-        playSound(523, 0.2, 'square', 0.2);
-        setTimeout(() => { playSound(659, 0.2, 'square', 0.2); }, 200);
-        setTimeout(() => { playSound(784, 0.4, 'square', 0.2); }, 400);
-
-        setTimeout(() => {
-            el.style.display = 'none';
-            level++;
-            setupLevel();
-        }, 2000);
-    }
-
-    function drawBlock(x, y, type) {
-        let img = imgBtn;
-        if (type && typeof type === 'string' && imgMap[type]) img = imgMap[type];
-        if (img.complete && img.naturalWidth!== 0) {
-            ctx.drawImage(img, x, y, size - 1, size - 1);
-        } else {
-            ctx.fillStyle = "rgba(0, 255, 255, 0.3)";
-            ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
-            if(type && type.length < 3) {
-                ctx.fillStyle = "white"; ctx.font = "14px Arial";
-                ctx.fillText(type, x+10, y+25);
-            }
-        }
-    }
-
-    function rotate(p) { return p[0].map((_, i) => p.map(row => row[i]).reverse()); }
-
-    function canPlace(p, r, c) {
-        if (r < 0 || c < 0 || r + p.length > 8 || c + p[0].length > 8) return false;
-        for (let i = 0; i < p.length; i++)
-            for (let j = 0; j < p[0].length; j++)
-                if (p[i][j] && grid[r+i][c+j]!== 0) return false;
-        return true;
-    }
-
-    function canFitAnywhere(p) {
-        let cur = p;
-        for (let rot = 0; rot < 4; rot++) {
-            for (let r = 0; r <= 8 - cur.length; r++)
-                for (let c = 0; c <= 8 - cur[0].length; c++)
-                    if (canPlace(cur, r, c)) return true;
-            cur = rotate(cur);
-        }
-        return false;
-    }
-
-    function injectItems(piece) {
-        let types = Object.keys(missionGoals);
-        if (Math.random() < 0.4 && types.length > 0) {
-            let type = types[Math.floor(Math.random() * types.length)];
-            let coords = [];
-            piece.forEach((row, r) => row.forEach((v, c) => { if(v === 1) coords.push([r,c]); }));
-            if (coords.length > 0) {
-                let choice = coords[Math.floor(Math.random() * coords.length)];
-                piece[choice[0]][choice[1]] = type;
-            }
-        }
-        return piece;
-    }
-
     function newSet() {
-        for(let i=0; i<3; i++) pieces[i] = injectItems(JSON.parse(JSON.stringify(shapes[Math.floor(Math.random()*shapes.length)])));
+        const types = Object.keys(missionGoals);
+        for(let i=0; i<3; i++) {
+            let p = JSON.parse(JSON.stringify(shapes[Math.floor(Math.random()*shapes.length)]));
+            if(Math.random() < 0.45) {
+                let r = Math.floor(Math.random()*p.length), c = Math.floor(Math.random()*p[0].length);
+                if(p[r][c]) p[r][c] = types[Math.floor(Math.random()*types.length)];
+            }
+            pieces[i] = p;
+        }
         renderUI();
+    }
+
+    function drawBlock(x, y, type, alpha = 1) {
+        ctx.globalAlpha = alpha;
+        let img = (typeof type === 'string' && imgMap[type]) ? imgMap[type] : imgBtn;
+        
+        // Efeito de brilho se for combo
+        if(comboCount > 0) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = getComboColor();
+        }
+
+        if(img.complete) ctx.drawImage(img, x, y, size-1, size-1);
+        else { ctx.fillStyle = getComboColor(); ctx.fillRect(x+1, y+1, size-2, size-2); }
+        
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
     }
 
     function renderUI() {
-        document.getElementById('info').innerText = `NÍVEL ${level}`;
         document.getElementById('score').innerText = score;
-        document.getElementById('score').style.color = comboCount > 0? getComboColor() : "#00ffff";
-        const mBar = document.getElementById('mission-bar');
-        mBar.innerHTML = '';
-        for (let type in missionGoals) {
-            let done = missionCollected[type] >= missionGoals[type];
-            mBar.innerHTML += `<span style="margin:0 10px; opacity:${done?0.3:1}">${type} ${missionCollected[type]}/${missionGoals[type]}</span>`;
+        document.getElementById('score').style.color = getComboColor();
+        const bar = document.getElementById('mission-bar');
+        bar.innerHTML = '';
+        for(let k in missionGoals) {
+            let isDone = missionCollected[k] >= missionGoals[k];
+            bar.innerHTML += `<span style="margin:0 10px; opacity:${isDone?0.3:1}">${k} ${missionCollected[k]}/${missionGoals[k]}</span>`;
         }
-
-        let moves = 0;
+        
         for(let i=0; i<3; i++) {
-            const s = document.getElementById('slot'+i); s.innerHTML = '';
+            const slot = document.getElementById('slot'+i); slot.innerHTML = '';
             if(!pieces[i]) continue;
-            if(!canFitAnywhere(pieces[i])) s.classList.add('disabled'); else { s.classList.remove('disabled'); moves++; }
-
-            const cvPiece = document.createElement('canvas');
-            cvPiece.width = pieces[i][0].length * 20; cvPiece.height = pieces[i].length * 20;
-            const cxP = cvPiece.getContext('2d');
-            pieces[i].forEach((row,r)=>row.forEach((v,c)=>{
-                if(v){
-                    let pImg = (typeof v === 'string')? imgMap[v] : imgBtn;
-                    if(pImg.complete) cxP.drawImage(pImg, c*20, r*20, 19, 19);
-                    else { cxP.fillStyle="#00ffff"; cxP.fillRect(c*20, r*20, 18, 18); }
+            const cv = document.createElement('canvas'); cv.width = 60; cv.height = 60;
+            const cx = cv.getContext('2d');
+            pieces[i].forEach((row,r) => row.forEach((v,c) => {
+                if(v) {
+                    let img = (typeof v === 'string') ? imgMap[v] : imgBtn;
+                    cx.drawImage(img, c*15, r*15, 14, 14);
                 }
             }));
-            s.appendChild(cvPiece);
+            slot.appendChild(cv);
         }
-        if (moves === 0 && pieces.some(p => p!== null)) {
-            if (bgMusicTimeout) { clearTimeout(bgMusicTimeout); bgMusicTimeout = null; }
-            playSound(150, 0.8, 'sawtooth', 0.1);
-            document.getElementById('game-over').style.display = 'flex';
-            document.getElementById('final-score').innerText = `Pontos: ${score}`;
-        }
-    }
-
-    function spawnComboText() {
-        const txt = comboPhrases[Math.min(comboCount - 1, comboPhrases.length - 1)];
-        comboTexts.push({
-            text: txt, x: 160, y: 120, alpha: 1, scale: 0.5, color: getComboColor()
-        });
-    }
-
-    function createExplosion(x, y) {
-        const color = getComboColor();
-        for(let i = 0; i < 20; i++) {
-            particles.push({
-                x: x * size + size/2,
-                y: y * size + size/2,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8,
-                life: 30,
-                color: color,
-                size: Math.random() * 4 + 2
-            });
-        }
-    }
-
-    function checkLines() {
-        let rd = [], cd = [];
-        for(let r=0; r<8; r++) if(grid[r].every(v => v!== 0)) rd.push(r);
-        for(let c=0; c<8; c++) {
-            let f = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) f = false;
-            if(f) cd.push(c);
-        }
-
-        if(rd.length || cd.length) {
-            comboCount++;
-            comboTimer = comboMaxTime;
-            boardFlashTimer = 8;
-            spawnComboText();
-
-            rd.forEach(r => { for(let c=0; c<8; c++) createExplosion(c, r); });
-            cd.forEach(c => { for(let r=0; r<8; r++) createExplosion(c, r); });
-            playBlockExplosionSound();
-
-            if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-            playSound(300 + (comboCount * 50), 0.2, 'square', 0.15);
-
-            if (comboCount >= 3) {
-                document.body.classList.add('flash');
-                flashTimer = 10;
-            }
-
-            score += (rd.length + cd.length) * 10 * comboCount;
-            if(score > best) { best = score; localStorage.setItem('blockBest', best); document.getElementById('best').innerText = best; }
-        } else {
-            comboCount = 0;
-        }
-
-        rd.forEach(r => { for(let c=0; c<8; c++) collect(r,c); });
-        cd.forEach(c => { for(let r=0; r<8; r++) collect(r,c); });
-
-        let allDone = true;
-        for (let type in missionGoals) if (missionCollected[type] < missionGoals[type]) allDone = false;
-        if (allDone && Object.keys(missionGoals).length > 0) {
-            showLevelComplete();
-            return;
-        }
-        renderUI();
-    }
-
-    function collect(r,c) {
-        let val = grid[r][c]; if(val === 0) return;
-        if(missionGoals[val]) { missionCollected[val]++; }
-        grid[r][c] = 0;
     }
 
     window.addEventListener('touchstart', e => {
-        const t = e.touches[0]; moved = false; touchT = Date.now();
+        const t = e.touches[0]; touchT = Date.now(); moved = false;
         for(let i=0; i<3; i++) {
             const r = document.getElementById('slot'+i).getBoundingClientRect();
             if(t.clientX > r.left && t.clientX < r.right && t.clientY > r.top && t.clientY < r.bottom) {
-                if(pieces[i]) {
-                    dragIdx = i; dragPiece = pieces[i]; mX = t.clientX; mY = t.clientY;
-                    playPlucSound();
-                }
+                if(pieces[i]) { dragIdx = i; dragPiece = pieces[i]; mX = t.clientX; mY = t.clientY; }
             }
         }
     });
 
     window.addEventListener('touchmove', e => {
-        if(dragIdx === -1) return; moved = true; mX = e.touches[0].clientX; mY = e.touches[0].clientY;
-        document.getElementById('slot'+dragIdx).style.opacity = '0.1';
+        if(dragIdx === -1) return; moved = true;
+        mX = e.touches[0].clientX; mY = e.touches[0].clientY;
     });
 
     window.addEventListener('touchend', () => {
         if(dragIdx === -1) return;
-        if(!moved && Date.now()-touchT < 250) { pieces[dragIdx] = rotate(pieces[dragIdx]); playSound(600, 0.1, 'sine'); renderUI(); }
-        else if(moved) {
+        if(!moved && (Date.now() - touchT < 250)) {
+            pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse());
+        } else if(moved) {
             const r = canvas.getBoundingClientRect();
             const col = Math.round((mX - r.left - (dragPiece[0].length*size/2))/size);
-            const row = Math.round((mY - r.top - (dragPiece.length*size/2))/size);
+            const row = Math.round((mY - r.top - (dragPiece.length*size/2) - 70)/size); // Offset para ver a peça
             if(canPlace(dragPiece, row, col)) {
-                playSound(400, 0.1, 'triangle', 0.05);
-                dragPiece.forEach((rd, i) => rd.forEach((v, j) => {
-                    if(v) grid[row+i][col+j] = v;
-                }));
-                pieces[dragIdx] = null; checkLines();
-                if(pieces.every(p => p === null)) newSet(); else renderUI();
-            } else {
-                playPanSound();
+                dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) grid[row+i][col+j] = v; }));
+                pieces[dragIdx] = null;
+                if(navigator.vibrate) navigator.vibrate(40);
+                checkLines();
+                if(pieces.every(p => p === null)) newSet();
             }
         }
-        document.getElementById('slot'+dragIdx).style.opacity = '1'; dragIdx = -1; dragPiece = null;
+        dragIdx = -1; moved = false; renderUI();
+        if(!pieces.some(p => canFit(p)) && pieces.some(p => p !== null)) {
+            document.getElementById('game-over').style.display = 'flex';
+            document.getElementById('final-score').innerText = "SCORE: " + score;
+        }
     });
 
-    function drawComboBorder() {
-        if (comboCount === 0 || comboTimer <= 0) {
-            canvas.style.borderColor = "#333";
-            canvas.style.boxShadow = "0 0 20px rgba(0,0,0,0.5)";
-            return;
+    function canPlace(p, r, c) {
+        if (r < 0 || c < 0 || r + p.length > 8 || c + p[0].length > 8) return false;
+        for (let i = 0; i < p.length; i++) for (let j = 0; j < p[0].length; j++) if (p[i][j] && grid[r+i][c+j] !== 0) return false;
+        return true;
+    }
+
+    function canFit(p) {
+        if(!p) return true;
+        for (let r = 0; r <= 8 - p.length; r++) for (let c = 0; c <= 8 - p[0].length; c++) if (canPlace(p, r, c)) return true;
+        return false;
+    }
+
+    function checkLines() {
+        let rd = [], cd = [];
+        for(let r=0; r<8; r++) if(grid[r].every(v => v !== 0)) rd.push(r);
+        for(let c=0; c<8; c++) { let f = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) f = false; if(f) cd.push(c); }
+        
+        if(rd.length || cd.length) {
+            comboCount++; comboTimer = comboMaxTime;
+            shakeIntensity = 10;
+            if(navigator.vibrate) navigator.vibrate([60, 40, 60]);
+            
+            let phrase = comboPhrases[Math.min(comboCount-1, comboPhrases.length-1)];
+            comboTexts.push({text: phrase, x: 160, y: 140, life: 1, color: getComboColor()});
+
+            rd.forEach(r => { for(let c=0; c<8; c++) collect(r,c); });
+            cd.forEach(c => { for(let r=0; r<8; r++) collect(r,c); });
+            
+            score += (rd.length + cd.length) * 10 * comboCount;
+            if(score > best) { best = score; localStorage.setItem('blockBest', best); }
         }
 
-        const progress = comboTimer / comboMaxTime;
-        const color = getComboColor();
-        const perimeter = 320 * 4;
-        const length = perimeter * progress;
+        if(Object.keys(missionGoals).every(k => missionCollected[k] >= missionGoals[k])) {
+            level++; setupLevel();
+        }
+    }
 
-        canvas.style.borderColor = color;
-        canvas.style.boxShadow = `0 0 25px ${color}, inset 0 0 25px ${color}`;
-
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 6;
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = color;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-
-        let remaining = length;
-        if (remaining > 0) { const drawLen = Math.min(remaining, 320); ctx.moveTo(0, 3); ctx.lineTo(drawLen, 3); remaining -= drawLen; }
-        if (remaining > 0) { const drawLen = Math.min(remaining, 320); ctx.moveTo(317, 0); ctx.lineTo(317, drawLen); remaining -= drawLen; }
-        if (remaining > 0) { const drawLen = Math.min(remaining, 320); ctx.moveTo(320, 317); ctx.lineTo(320 - drawLen, 317); remaining -= drawLen; }
-        if (remaining > 0) { const drawLen = Math.min(remaining, 320); ctx.moveTo(3, 320); ctx.lineTo(3, 320 - drawLen); }
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+    function collect(r,c) {
+        let v = grid[r][c];
+        if(missionGoals[v] && missionCollected[v] < missionGoals[v]) missionCollected[v]++;
+        grid[r][c] = 0;
+        let color = getComboColor();
+        for(let i=0; i<6; i++) particles.push({x: c*size+20, y: r*size+20, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1, color: color});
     }
 
     function loop() {
-        if (comboCount > 0) {
+        if(comboTimer > 0) {
             comboTimer--;
-            if (comboTimer <= 0) comboCount = 0;
+            canvas.style.borderColor = getComboColor();
+        } else {
+            comboCount = 0;
+            canvas.style.borderColor = "#333";
         }
 
-        if (flashTimer > 0) {
-            flashTimer--;
-            if (flashTimer === 0) document.body.classList.remove('flash');
+        ctx.save();
+        if(shakeIntensity > 0) { 
+            ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); 
+            shakeIntensity *= 0.9; 
         }
-
+        
         ctx.clearRect(0,0,320,320);
-
-        if (boardFlashTimer > 0) {
-            boardFlashTimer--;
-            ctx.fillStyle = `rgba(255, 255, 255, ${boardFlashTimer * 0.05})`;
-            ctx.fillRect(0, 0, 320, 320);
+        
+        // Fundo do Grid
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
+            ctx.fillStyle = "rgba(255,255,255,0.03)"; ctx.fillRect(c*size, r*size, size-1, size-1);
+            if(grid[r][c]) drawBlock(c*size, r*size, grid[r][c]);
         }
 
-        for(let r=0; r<8; r++) {
-            for(let c=0; c<8; c++) {
-                ctx.fillStyle = "rgba(255,255,255,0.03)"; ctx.fillRect(c*size, r*size, size-1, size-1);
-                if(grid[r][c]) drawBlock(c*size, r*size, grid[r][c]);
-            }
+        // Barra de Combo Visual
+        if(comboTimer > 0) {
+            ctx.fillStyle = getComboColor();
+            let width = (comboTimer / comboMaxTime) * 320;
+            ctx.fillRect(0, 0, width, 3);
         }
 
+        // Peça sendo arrastada
+        if(dragIdx !== -1 && moved) {
+            const r = canvas.getBoundingClientRect();
+            let dx = mX - r.left - (dragPiece[0].length*size/2);
+            let dy = mY - r.top - (dragPiece.length*size/2) - 70;
+            dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) drawBlock(dx+j*size, dy+i*size, v, 0.6); }));
+        }
+
+        // Partículas
         particles.forEach((p, i) => {
-            ctx.save();
-            ctx.globalAlpha = p.life / 30;
-            ctx.fillStyle = p.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = p.color;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.2;
-            p.life--;
+            p.x += p.vx; p.y += p.vy; p.life -= 0.025;
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+            ctx.fillRect(p.x, p.y, 3, 3);
             if(p.life <= 0) particles.splice(i, 1);
         });
+        ctx.globalAlpha = 1;
 
+        // Textos de Combo
         comboTexts.forEach((ct, i) => {
-            ctx.save();
-            ctx.globalAlpha = ct.alpha;
-            ctx.fillStyle = ct.color;
-            ctx.font = `bold ${32 * ct.scale}px 'Segoe UI'`;
-            ctx.textAlign = "center";
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = ct.color;
+            ct.y -= 0.8; ct.life -= 0.015;
+            ctx.fillStyle = ct.color; ctx.globalAlpha = ct.life;
+            ctx.font = "bold 24px Arial"; ctx.textAlign = "center";
             ctx.fillText(ct.text, ct.x, ct.y);
-            ctx.restore();
-            ct.y -= 2;
-            ct.alpha -= 0.02;
-            ct.scale += 0.02;
-            if(ct.alpha <= 0) comboTexts.splice(i, 1);
+            if(ct.life <= 0) comboTexts.splice(i, 1);
         });
+        ctx.globalAlpha = 1;
 
-        if(dragPiece && moved) {
-            const r = canvas.getBoundingClientRect();
-            const x = mX - r.left - (dragPiece[0].length*size/2);
-            const y = mY - r.top - (dragPiece.length*size/2);
-            dragPiece.forEach((rd, i) => rd.forEach((v, j) => {
-                if(v) {
-                    ctx.globalAlpha = 0.7;
-                    drawBlock(x + j*size, y + i*size, v);
-                    ctx.globalAlpha = 1;
-                }
-            }));
-        }
-
-        drawComboBorder();
+        ctx.restore();
         requestAnimationFrame(loop);
     }
 </script>
