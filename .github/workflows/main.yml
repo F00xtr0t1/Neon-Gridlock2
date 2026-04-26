@@ -28,19 +28,20 @@ jobs:
         run: |
           cordova create build com.neogridlock.myapp "Neon Gridlock"
           cd build
-          # cordova-android@14 já vem com SDK 35 por padrão
           cordova platform add android@14.0.0
-          cp -r ../* www/ || true
-          rm -rf www/build
           
-          # Atualiza versão do app no config.xml
-          sed -i 's/version="1.0.0"/version="3.6.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30600"/' config.xml
+          # COPIA TUDO DA RAIZ, INCLUINDO A PASTA assets
+          cp -r ../index.html ./www/
+          cp -r ../assets ./www/
+          cp -r ../README.md ./www/ || true
+          
+          # Atualiza versão do app
+          sed -i 's/version="1.0.0"/version="3.7.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30700"/' config.xml
           
       - name: Force SDK 35 no config.xml
         run: |
           cd build
-          # Garante targetSdk 35 mesmo se a plataforma mudar
           sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" />' config.xml
           sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" />' config.xml
 
@@ -52,5 +53,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-bundle-30600
+          name: app-release-bundle-30700
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
