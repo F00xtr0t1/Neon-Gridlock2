@@ -1,4 +1,4 @@
-name: Build AAB Neon Gridlock
+name: Build AAB Neo Gridlock
 
 on:
   push:
@@ -28,31 +28,32 @@ jobs:
 
       - name: Create Project
         run: |
-          # PACKAGE CORRETO AGORA: com.neongridlock.myapp
-          cordova create build com.neongridlock.myapp "Neon Gridlock"
+          # PACKAGE SEM N: com.neogridlock.myapp
+          cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # Copia arquivos do jogo
-          cp -r ../index.html www/ || true
-          cp -r ../assets www/ || true
-          cp -r ../README.md www/ || true
+          # COPIA SÓ O NECESSÁRIO
+          cp ../index.html www/index.html
+          cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # Atualiza versão do app no config.xml
+          # Atualiza versão
           sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="30800"/' config.xml
           
       - name: Adicionar logo e SDK 35
         run: |
           cd build
-          # Cria pasta e copia logo
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png
           
-          # Adiciona ícone + SDK 35 no config.xml
+          # CONFIRMA O PACKAGE NO LOG
+          echo "=== PACKAGE QUE VAI PRO AAB ==="
+          grep "id=" config.xml
+          echo "=============================="
+          
           sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
           
-          # Cria mipmap pro Android
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
@@ -72,5 +73,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeonGridlock-30800-CERTO
+          name: NeoGridlock-30800-SEM-N
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
