@@ -44,21 +44,7 @@ jobs:
           sed -i 's/targetSdkVersion=.*/targetSdkVersion=35/' project.properties
           sed -i 's/compileSdkVersion=.*/compileSdkVersion=35/' project.properties
 
-      - name: Set versionCode and minSdk
+      - name: Set versionCode and versionName
         run: |
           cd app
-          sed -i 's/android-versionCode="1"/android-versionCode="2"/' config.xml
-          sed -i 's/<preference name="android-minSdkVersion" value=".*"/<preference name="android-minSdkVersion" value="24"/' config.xml || true
-          sed -i 's/<preference name="android-targetSdkVersion" value=".*"/<preference name="android-targetSdkVersion" value="35"/' config.xml || true
-
-      - name: Build Release AAB
-        run: |
-          cd app
-          cordova build android --release -- --packageType=bundle
-
-      - name: Upload AAB Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeonGridlock-Pro-API35
-          path: app/platforms/android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 5
+          sed -i 's/android-versionCode="1
