@@ -1,4 +1,4 @@
-name: Build AAB
+name: Build AAB Neon Gridlock
 
 on:
   push:
@@ -9,10 +9,10 @@ jobs:
   android-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -23,56 +23,36 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Cordova
+      - name: Instalar Cordova
         run: npm install -g cordova@latest
 
-      - name: Create Project
+      - name: Criar projeto Cordova
         run: |
           cordova create build com.neongridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
-          
-          # COPIA O JOGO
+
+      - name: Copiar arquivos do jogo
+        run: |
+          cd build
           cp -r ../index.html ./www/
           cp -r ../assets ./www/ 2>/dev/null || true
           cp -r ../README.md ./www/ || true
-          
-          # COPIA LOGO E GERA TODOS OS TAMANHOS
+
+      - name: Adicionar logo e configurar app
+        run: |
+          cd build
+          # Garante pasta da logo
           mkdir -p res/icon
           cp -r ../res/icon/icon.png ./res/icon/icon.png
           
-          # ATUALIZA VERSÃO PRA 30800
+          # Ajusta nome, versão e versionCode
+          sed -i 's/<name>HelloCordova<\/name>/<name>Neon Gridlock<\/name>/' config.xml
           sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
           sed -i 's/android-versionCode="[0-9]*"/android-versionCode="30800"/' config.xml
           
-          # FORÇA USAR A LOGO + GERA MIPMAPS
+          # Adiciona ícone no config.xml
           sed -i '/<\/widget>/i \    <icon src="res/icon/icon.png" />' config.xml
           
-          # CRIA TODOS OS ÍCONES QUE O ANDROID QUER
-          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
-      - name: Force SDK 35 no config.xml
-        run: |
-          cd build
-          sed -i '/<\/widget>/i \  <preference name="android-targetSdkVersion" value="35" />' config.xml
-          sed -i '/<\/widget>/i \  <preference name="android-compileSdkVersion" value="35" />' config.xml
-
-      - name: Build
-        run: |
-          cd build
-          cordova build android --release -- --packageType=bundle
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-bundle-30800
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+          # Força SDK 35 pra passar na Play Store
+          sed -i '/<\/widget
