@@ -35,7 +35,7 @@ jobs:
           
           # Atualiza versão do app no config.xml
           sed -i 's/version="1.0.0"/version="3.5.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30500"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30501"/' config.xml
           
       - name: Force SDK 35 no config.xml
         run: |
