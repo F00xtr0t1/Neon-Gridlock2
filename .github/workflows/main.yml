@@ -1,6 +1,6 @@
 name: Build AAB
 
-
+on:
   push:
     branches: [ main ]
   workflow_dispatch:
@@ -37,16 +37,28 @@ jobs:
           cp -r ../assets ./www/ 2>/dev/null || true
           cp -r ../README.md ./www/ || true
           
-          # COPIA A LOGO 1024x1024
+          # COPIA LOGO E GERA TODOS OS TAMANHOS
           mkdir -p res/icon
           cp -r ../res/icon/icon.png ./res/icon/icon.png
           
           # ATUALIZA VERSÃO PRA 30800
           sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30800"/' config.xml
+          sed -i 's/android-versionCode="[0-9]*"/android-versionCode="30800"/' config.xml
           
-          # FORÇA USAR A LOGO NO APP
+          # FORÇA USAR A LOGO + GERA MIPMAPS
           sed -i '/<\/widget>/i \    <icon src="res/icon/icon.png" />' config.xml
+          
+          # CRIA TODOS OS ÍCONES QUE O ANDROID QUER
+          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Force SDK 35 no config.xml
         run: |
