@@ -1,7 +1,9 @@
 name: Build AAB
+
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   android-build:
@@ -20,30 +22,37 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          
+
       - name: Install Cordova
         run: npm install -g cordova@latest
 
       - name: Create Project
         run: |
-          cordova create build com.neogridlock.myapp "Neon Gridlock"
+          cordova create build com.neongridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # COPIA TUDO DA RAIZ, INCLUINDO A PASTA assets
+          # COPIA O JOGO
           cp -r ../index.html ./www/
-          cp -r ../assets ./www/
+          cp -r ../assets ./www/ 2>/dev/null || true
           cp -r ../README.md ./www/ || true
           
-          # Atualiza versão do app
-          sed -i 's/version="1.0.0"/version="3.7.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30700"/' config.xml
+          # COPIA A LOGO 1024x1024
+          mkdir -p res/icon
+          cp -r ../res/icon/icon.png ./res/icon/icon.png
           
+          # ATUALIZA VERSÃO PRA 30800
+          sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30800"/' config.xml
+          
+          # FORÇA USAR A LOGO NO APP
+          sed -i '/<\/widget>/i \    <icon src="res/icon/icon.png" />' config.xml
+
       - name: Force SDK 35 no config.xml
         run: |
           cd build
-          sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" />' config.xml
-          sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" />' config.xml
+          sed -i '/<\/widget>/i \  <preference name="android-targetSdkVersion" value="35" />' config.xml
+          sed -i '/<\/widget>/i \  <preference name="android-compileSdkVersion" value="35" />' config.xml
 
       - name: Build
         run: |
@@ -53,5 +62,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-bundle-30700
+          name: app-release-bundle-30800
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
