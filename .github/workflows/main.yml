@@ -42,17 +42,36 @@ jobs:
       - name: Adicionar logo e configurar app
         run: |
           cd build
-          # Garante pasta da logo
           mkdir -p res/icon
           cp -r ../res/icon/icon.png ./res/icon/icon.png
           
-          # Ajusta nome, versão e versionCode
-          sed -i 's/<name>HelloCordova<\/name>/<name>Neon Gridlock<\/name>/' config.xml
-          sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
-          sed -i 's/android-versionCode="[0-9]*"/android-versionCode="30800"/' config.xml
+          # Usa # como separador no sed pra não brigar com /
+          sed -i 's#<name>HelloCordova</name>#<name>Neon Gridlock</name>#' config.xml
+          sed -i 's#version="1.0.0"#version="3.8.0"#' config.xml
+          sed -i 's#android-versionCode="[0-9]*"#android-versionCode="30800"#' config.xml
           
-          # Adiciona ícone no config.xml
-          sed -i '/<\/widget>/i \    <icon src="res/icon/icon.png" />' config.xml
+          # Adiciona ícone e SDK 35
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
           
-          # Força SDK 35 pra passar na Play Store
-          sed -i '/<\/widget
+          # Cria mipmap
+          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+      - name: Build AAB Release
+        run: |
+          cd build
+          cordova build android --release -- --packageType=bundle
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeonGridlock-30800
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
