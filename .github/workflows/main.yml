@@ -34,8 +34,8 @@ jobs:
           rm -rf www/build
           
           # Atualiza versão do app no config.xml
-          sed -i 's/version="1.0.0"/version="3.5.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30511"/' config.xml
+          sed -i 's/version="1.0.0"/version="3.6.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30600"/' config.xml
           
       - name: Force SDK 35 no config.xml
         run: |
@@ -52,5 +52,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-bundle
+          name: app-release-bundle-30600
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
