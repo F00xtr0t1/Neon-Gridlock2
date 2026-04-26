@@ -47,4 +47,19 @@ jobs:
       - name: Set versionCode and versionName
         run: |
           cd app
-          sed -i 's/android-versionCode="1
+          sed -i 's/android-versionCode="1"/android-versionCode="30500"/g' config.xml
+          sed -i 's/version="1.0.0"/version="3.5.0"/g' config.xml
+          sed -i 's/minSdkVersion=".*"/minSdkVersion="24"/g' config.xml || true
+          sed -i 's/targetSdkVersion=".*"/targetSdkVersion="35"/g' config.xml || true
+
+      - name: Build Release AAB
+        run: |
+          cd app
+          cordova build android --release -- --packageType=bundle
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeonGridlock-Pro-API35-3.5.0
+          path: app/platforms/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 5
