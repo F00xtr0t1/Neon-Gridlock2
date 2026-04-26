@@ -9,10 +9,10 @@ jobs:
   android-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -22,38 +22,37 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Instalar Cordova
+          
+      - name: Install Cordova
         run: npm install -g cordova@latest
 
-      - name: Criar projeto Cordova
+      - name: Create Project
         run: |
+          # PACKAGE CORRETO AGORA: com.neongridlock.myapp
           cordova create build com.neongridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
-
-      - name: Copiar arquivos do jogo
+          
+          # Copia arquivos do jogo
+          cp -r ../index.html www/ || true
+          cp -r ../assets www/ || true
+          cp -r ../README.md www/ || true
+          
+          # Atualiza versão do app no config.xml
+          sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30800"/' config.xml
+          
+      - name: Adicionar logo e SDK 35
         run: |
           cd build
-          cp -r ../index.html ./www/
-          cp -r ../assets ./www/ 2>/dev/null || true
-          cp -r ../README.md ./www/ || true
-
-      - name: Adicionar logo e configurar app
-        run: |
-          cd build
+          # Cria pasta e copia logo
           mkdir -p res/icon
-          cp -r ../res/icon/icon.png ./res/icon/icon.png
+          cp ../res/icon/icon.png res/icon/icon.png
           
-          # Usa # como separador no sed pra não brigar com /
-          sed -i 's#<name>HelloCordova</name>#<name>Neon Gridlock</name>#' config.xml
-          sed -i 's#version="1.0.0"#version="3.8.0"#' config.xml
-          sed -i 's#android-versionCode="[0-9]*"#android-versionCode="30800"#' config.xml
-          
-          # Adiciona ícone e SDK 35
+          # Adiciona ícone + SDK 35 no config.xml
           sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
           
-          # Cria mipmap
+          # Cria mipmap pro Android
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
@@ -65,13 +64,13 @@ jobs:
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-      - name: Build AAB Release
+      - name: Build
         run: |
           cd build
           cordova build android --release -- --packageType=bundle
 
-      - name: Upload AAB
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeonGridlock-30800
+          name: NeonGridlock-30800-CERTO
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
