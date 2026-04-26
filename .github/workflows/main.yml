@@ -1,30 +1,64 @@
-name: Build Debug APK
+name: Build AAB API 35 - Neon Gridlock Pro
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/setup-java@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - run: npm install -g cordova@12
-      - run: |
-          cordova create app com.f00xgames.neongridlock "Neon Gridlock"
+
+      - name: Install Cordova
+        run: npm install -g cordova@12
+
+      - name: Create Cordova Project
+        run: |
+          cordova create app com.f00xgames.neongridlockpro "Neon Gridlock Pro"
           rm -rf app/www/*
-          cp index.html app/www/
-          cp -r assets app/www/
-      - run: cd app && cordova platform add android@13
-      - run: cd app && cordova build android
-      - uses: actions/upload-artifact@v4
+
+      - name: Copy Web Files
+        run: |
+          cp index.html app/www/index.html
+          cp -r assets app/www/assets
+
+      - name: Add Android Platform
+        run: |
+          cd app
+          cordova platform add android@13
+
+      - name: Force targetSdkVersion 35
+        run: |
+          cd app/platforms/android
+          sed -i 's/targetSdkVersion=.*/targetSdkVersion=35/' project.properties
+          sed -i 's/compileSdkVersion=.*/compileSdkVersion=35/' project.properties
+
+      - name: Set versionCode and minSdk
+        run: |
+          cd app
+          sed -i 's/android-versionCode="1"/android-versionCode="2"/' config.xml
+          sed -i 's/<preference name="android-minSdkVersion" value=".*"/<preference name="android-minSdkVersion" value="24"/' config.xml || true
+          sed -i 's/<preference name="android-targetSdkVersion" value=".*"/<preference name="android-targetSdkVersion" value="35"/' config.xml || true
+
+      - name: Build Release AAB
+        run: |
+          cd app
+          cordova build android --release -- --packageType=bundle
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: NeonGridlock-debug
-          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          name: NeonGridlock-Pro-API35
+          path: app/platforms/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 5
