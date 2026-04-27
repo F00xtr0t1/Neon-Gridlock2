@@ -38,8 +38,8 @@ jobs:
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
           # Atualiza versão
-          sed -i 's/version="1.0.0"/version="4.1.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.3.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30951"/' config.xml
           
       - name: Adicionar logo e SDK 35
         run: |
