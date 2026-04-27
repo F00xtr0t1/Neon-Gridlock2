@@ -1,4 +1,4 @@
-name: Build AAB Neo Gridlock
+name: Build AAB Neon Gridlock Pro
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
 
       - name: Create Project
         run: |
-          cordova create build com.neogridlock.myapp "Neo Gridlock"
+          cordova create build com.neogridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
           
@@ -36,22 +36,18 @@ jobs:
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
           sed -i 's/version="1.0.0"/version="3.8.2"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="38200"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30805"/' config.xml
 
       - name: Remove splash plugin
         run: |
           cd build
           cordova plugin rm cordova-plugin-splashscreen || echo "Plugin nao instalado"
           
-      - name: Adicionar logo e matar robo
+      - name: Configurar AAB API 35 sem robo
         run: |
           cd build
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png
-          
-          echo "=== PACKAGE QUE VAI PRO AAB ==="
-          grep "id=" config.xml
-          echo "=============================="
           
           sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreenDelay" value="0" />\n    <preference name="ShowSplashScreen" value="false" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="backgroundColor" value="0xFF02111A" />\n</widget>#' config.xml
           
@@ -66,13 +62,13 @@ jobs:
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-      - name: Build
+      - name: Build AAB
         run: |
           cd build
           cordova build android --release -- --packageType=bundle
 
-      - name: Upload
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-38200-SEM-ROBO
+          name: NeonGridlock-Pro-30805-API35
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
