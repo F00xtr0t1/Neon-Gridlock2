@@ -39,7 +39,7 @@ jobs:
           
           # Atualiza versão
           sed -i 's/version="1.0.0"/version="4.1.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="309110"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
           
       - name: Adicionar logo e SDK 35
         run: |
@@ -52,7 +52,7 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="SplashShowOnlyFirstTime" value="false" />\n</widget>#' config.xml
           
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
@@ -73,5 +73,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-30800-SEM-N
+          name: NeoGridlock-4.1.0-30900
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
