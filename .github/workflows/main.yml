@@ -8,6 +8,7 @@ on:
 jobs:
   android-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,16 +29,13 @@ jobs:
 
       - name: Create Project
         run: |
-          # PACKAGE SEM N: com.neogridlock.myapp
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # COPIA SÓ O NECESSÁRIO
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # Atualiza versão 4.7.0
           sed -i 's/version="1.0.0"/version="4.7.0"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="47000"/' config.xml
           
@@ -45,11 +43,11 @@ jobs:
         run: |
           cd build
           mkdir -p res/icon
-          cp ../res/icon/icon.png res/icon/icon.png
+          cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
           
-          # CONFIRMA O PACKAGE NO LOG
           echo "=== PACKAGE QUE VAI PRO AAB ==="
           grep "id=" config.xml
           echo "=============================="
           
-          sed
+          # AWK NÃO TRAVA - SUBSTITUI O SED
+          awk '/<\/widget>/{print "    <icon src=\"res/icon/icon.png\" />\n    <preference name=\"android-targetSdkVersion\" value=\"35\" />\n    <preference name=\"android-compileSdkVersion\" value=\"35\" />\n    <preference
