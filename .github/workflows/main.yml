@@ -1,61 +1,31 @@
-name: Build AAB Neon Gridlock Pro
+name: Build AAB Basico
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
-  android-build:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          
-      - name: Install Cordova
-        run: npm install -g cordova@latest
-
-      - name: Create Project
-        run: |
+      - run: npm install -g cordova@latest
+      - run: |
           cordova create build com.neogridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
-          
-          if [ -f ../index.html ]; then
-            cp ../index.html www/index.html
-          else
-            echo "ERRO: index.html nao encontrado na raiz"
-            exit 1
-          fi
-          
-          cp -r ../assets www/assets || echo "Sem pasta assets - ok"
-          
+          cp ../index.html www/index.html
+          cp ../res/icon/icon.png res/icon.png
           sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="30801"/' config.xml
-
-      - name: Remove splash plugin
-        run: |
-          cd build
-          cordova plugin rm cordova-plugin-splashscreen || echo "Plugin nao instalado"
-          
-      - name: Configurar AAB API 35 sem robo
-        run: |
-          cd build
-          
-          if [ -f ../res/icon/icon.png ]; then
-            mkdir -p res/icon
-            cp ../res/icon/icon.png res/icon/icon.png
-            
-            mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
-            mkdir -
+          sed -i 's#</widget>#    <preference name="android-targetSdkVersion" value="35" />\n</widget>#' config.xml
+          cordova build android --release -- --packageType=bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AAB-NeonGridlock-30801
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
