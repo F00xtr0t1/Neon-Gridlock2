@@ -34,7 +34,7 @@ jobs:
           cp -r ../assets www/assets || echo "sem assets"
           cp ../res/icon/icon.png www/icon.png || echo "sem icone"
           
-          sed -i 's/version="1.0.0"/version="3.2.0"/' config.xml
+          sed -i 's/version="1.0.0"/version="3.9.0"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
           
       - name: Force SDK 35 no config.xml
