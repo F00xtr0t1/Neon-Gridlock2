@@ -48,13 +48,13 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          # INSERE AS LINHAS UMA POR UMA PRA NÃO QUEBRAR O SED
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n</widget>#' config.xml
-          sed -i 's#</widget>#    <preference name="android-targetSdkVersion" value="35" />\n</widget>#' config.xml
-          sed -i 's#</widget>#    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
-          sed -i 's#</widget>#    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/icon/icon.png" />\n</widget>#' config.xml
-          sed -i 's#</widget>#    <preference name="AndroidWindowSplashScreenBackground" value="#000000" />\n</widget>#' config.xml
-          sed -i 's#</widget>#    <preference name="SplashScreen" value="none" />\n</widget>#' config.xml
+          # USANDO SED COM INSERT - NÃO DÁ ERRO
+          sed -i '/<\/widget>/i \    <icon src="res\/icon\/icon.png" \/>' config.xml
+          sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" \/>' config.xml
+          sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" \/>' config.xml
+          sed -i '/<\/widget>/i \    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res\/icon\/icon.png" \/>' config.xml
+          sed -i '/<\/widget>/i \    <preference name="AndroidWindowSplashScreenBackground" value="#000000" \/>' config.xml
+          sed -i '/<\/widget>/i \    <preference name="SplashScreen" value="none" \/>' config.xml
           
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
@@ -76,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeoGridlock-4.1.0-30900-SEM-ROBO
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+         
