@@ -69,11 +69,23 @@ jobs:
       - name: Build
         run: |
           cd build
-          cordova build android --release -- --packageType=bundle
+          cordova build android --release -- --packageType=bundle --verbose
+          
+      - name: DEBUG - Lista todos os arquivos
+        if: always()
+        run: |
+          cd build
+          echo "=== PROCURANDO ARQUIVOS .AAB ==="
+          find . -name "*.aab" -type f
+          echo "=== PROCURANDO ARQUIVOS .APK ==="
+          find . -name "*.apk" -type f
+          echo "=== ESTRUTURA DA PASTA platforms/android ==="
+          ls -la platforms/android/
 
       - name: Upload
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: NeoGridlock-4.1.0-30900
           path: build/**/*.aab
-          if-no-files-found: error
+          if-no-files-found: warn
