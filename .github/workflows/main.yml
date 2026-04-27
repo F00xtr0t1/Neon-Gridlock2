@@ -58,28 +58,4 @@ jobs:
             cp ../res/icon/icon.png res/icon/icon.png
             
             mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
-            mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
-            mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
-            mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
-            mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          else
-            echo "AVISO: icon.png nao encontrado. Build vai usar icone padrao."
-          fi
-          
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreenDelay" value="0" />\n    <preference name="ShowSplashScreen" value="false" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="backgroundColor" value="0xFF02111A" />\n</widget>#' config.xml
-
-      - name: Build AAB
-        run: |
-          cd build
-          cordova build android --release -- --packageType=bundle
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeonGridlock-Pro-30801-API35
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+            mkdir -
