@@ -37,9 +37,9 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # Atualiza versão
+          # Atualiza versão 4.5.0
           sed -i 's/version="1.0.0"/version="4.5.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30989"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="45000"/' config.xml
           
       - name: Adicionar logo e SDK 35 + MATAR ROBO
         run: |
@@ -52,7 +52,6 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          # TROCA ESSE SED GIGANTE POR ESSES 6 PEQUENOS
           sed -i '/<\/widget>/i \    <icon src="res\/icon\/icon.png" \/>' config.xml
           sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" \/>' config.xml
           sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" \/>' config.xml
@@ -65,19 +64,4 @@ jobs:
           mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
-      - name: Build
-        run: |
-          cd build
-          cordova build android --release -- --packageType=bundle
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: NeoGridlock-4.1.0-30900
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+          cp res/icon
