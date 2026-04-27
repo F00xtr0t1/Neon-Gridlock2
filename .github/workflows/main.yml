@@ -48,7 +48,6 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          # USANDO SED COM INSERT - NÃO DÁ ERRO
           sed -i '/<\/widget>/i \    <icon src="res\/icon\/icon.png" \/>' config.xml
           sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" \/>' config.xml
           sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" \/>' config.xml
@@ -75,5 +74,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-4.1.0-30900-SEM-ROBO
-         
+          name: NeoGridlock-4.1.0-30900
+          path: build/platforms/android/build/outputs/bundle/release/*.aab
