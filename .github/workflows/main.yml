@@ -28,20 +28,22 @@ jobs:
 
       - name: Create Project
         run: |
-          # PACKAGE SEM N: com.neogridlock.myapp
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # COPIA SÓ O NECESSÁRIO
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # ATUALIZA VERSÃO PRA 3.8.2
           sed -i 's/version="1.0.0"/version="3.8.2"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="38200"/' config.xml
 
-      - name: Adicionar logo e SDK 35
+      - name: Remove splash plugin
+        run: |
+          cd build
+          cordova plugin rm cordova-plugin-splashscreen || echo "Plugin nao instalado"
+          
+      - name: Adicionar logo e matar robo
         run: |
           cd build
           mkdir -p res/icon
@@ -51,7 +53,7 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n</widget>#' config.xml
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreenDelay" value="0" />\n    <preference name="ShowSplashScreen" value="false" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="backgroundColor" value="0xFF02111A" />\n</widget>#' config.xml
           
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
@@ -72,5 +74,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-38200-SEM-N
+          name: NeoGridlock-38200-SEM-ROBO
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
