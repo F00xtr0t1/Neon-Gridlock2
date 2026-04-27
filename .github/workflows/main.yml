@@ -28,31 +28,28 @@ jobs:
 
       - name: Create Project
         run: |
-          # PACKAGE SEM N: com.neogridlock.myapp
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # COPIA SÓ O NECESSÁRIO
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # Atualiza versão
-          sed -i 's/version="1.0.0"/version="4.3.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30951"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.4.1"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
           
-      - name: Adicionar logo e SDK 35
+      - name: Adicionar logo e MATAR SPLASH DO ANDROID 12+
         run: |
           cd build
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png
           
-          # CONFIRMA O PACKAGE NO LOG
           echo "=== PACKAGE QUE VAI PRO AAB ==="
           grep "id=" config.xml
           echo "=============================="
           
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="SplashShowOnlyFirstTime" value="false" />\n</widget>#' config.xml
+          # AQUI TÁ O PULO DO GATO PRA MATAR O ROBO
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/icon/icon.png" />\n    <preference name="AndroidWindowSplashScreenBackground" value="#000000" />\n    <preference name="SplashScreen" value="none" />\n</widget>#' config.xml
           
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
           mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
@@ -73,5 +70,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-4.1.0-30900
+          name: NeoGridlock-4.1.0-30900-SEM-ROBO
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
