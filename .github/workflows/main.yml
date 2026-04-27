@@ -1,5 +1,5 @@
 name: Build AAB
-
+on:
   push:
     branches: [ main ]
 
