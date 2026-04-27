@@ -37,9 +37,9 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # Atualiza versão 4.5.0
-          sed -i 's/version="1.0.0"/version="4.5.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="45000"/' config.xml
+          # Atualiza versão 4.7.0
+          sed -i 's/version="1.0.0"/version="4.7.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="47000"/' config.xml
           
       - name: Adicionar logo e SDK 35 + MATAR ROBO
         run: |
@@ -52,16 +52,4 @@ jobs:
           grep "id=" config.xml
           echo "=============================="
           
-          sed -i '/<\/widget>/i \    <icon src="res\/icon\/icon.png" \/>' config.xml
-          sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" \/>' config.xml
-          sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" \/>' config.xml
-          sed -i '/<\/widget>/i \    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res\/icon\/icon.png" \/>' config.xml
-          sed -i '/<\/widget>/i \    <preference name="AndroidWindowSplashScreenBackground" value="#000000" \/>' config.xml
-          sed -i '/<\/widget>/i \    <preference name="SplashScreen" value="none" \/>' config.xml
-          
-          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
-          cp res/icon
+          sed
