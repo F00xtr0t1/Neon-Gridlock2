@@ -24,8 +24,8 @@ jobs:
           
           cp ../index.html www/index.html
           
-          sed -i 's/version="1.0.0"/version="3.2.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.0.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30910"/' config.xml
           sed -i 's#</widget>#    <icon src="res/android/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n</widget>#' config.xml
           
           cordova build android --release -- --packageType=bundle
