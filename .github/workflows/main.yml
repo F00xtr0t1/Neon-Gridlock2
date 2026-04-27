@@ -1,31 +1,38 @@
-name: Build AAB Basico
+name: Build AAB
 
-on: workflow_dispatch
+  push:
+    branches: [ main ]
 
 jobs:
-  build:
+  android-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/setup-java@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - run: npm install -g cordova@latest
-      - run: |
+          
+      - name: Install Cordova
+        run: npm install -g cordova@latest
+
+      - name: Create Project
+        run: |
           cordova create build com.neogridlock.myapp "Neon Gridlock"
           cd build
+          # cordova-android@14 já vem com SDK 35 por padrão
           cordova platform add android@14.0.0
-          cp ../index.html www/index.html
-          cp ../res/icon/icon.png res/icon.png
-          sed -i 's/version="1.0.0"/version="3.8.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30801"/' config.xml
-          sed -i 's#</widget>#    <preference name="android-targetSdkVersion" value="35" />\n</widget>#' config.xml
-          cordova build android --release -- --packageType=bundle
-      - uses: actions/upload-artifact@v4
-        with:
-          name: AAB-NeonGridlock-30801
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+          cp -r ../* www/ || true
+          rm -rf www/build
+          
+          # Atualiza versão do app no config.xml
+          sed -i 's/version="1.0.0"/version="3.2.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android
