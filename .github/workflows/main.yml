@@ -1,55 +1,35 @@
 name: Build AAB
-on:
-  push:
-    branches: [ main ]
+on: workflow_dispatch
 
 jobs:
-  android-build:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          
-      - name: Install Cordova
-        run: npm install -g cordova@latest
-
-      - name: Create Project
-        run: |
+      - run: npm install -g cordova@latest
+      - run: |
           cordova create build com.neogridlock.myapp "Neon Gridlock"
           cd build
           cordova platform add android@14.0.0
           
+          mkdir -p res/android
+          cp ../res/icon/icon.png res/android/icon.png
+          
           cp ../index.html www/index.html
-          cp -r ../assets www/assets || echo "sem assets"
-          cp ../res/icon/icon.png www/icon.png || echo "sem icone"
           
-          sed -i 's/version="1.0.0"/version="3.9.0"/' config.xml
+          sed -i 's/version="1.0.0"/version="3.2.0"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="30900"/' config.xml
+          sed -i 's#</widget>#    <icon src="res/android/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n</widget>#' config.xml
           
-      - name: Force SDK 35 no config.xml
-        run: |
-          cd build
-          sed -i '/<\/widget>/i \    <preference name="android-targetSdkVersion" value="35" />' config.xml
-          sed -i '/<\/widget>/i \    <preference name="android-compileSdkVersion" value="35" />' config.xml
-
-      - name: Build
-        run: |
-          cd build
           cordova build android --release -- --packageType=bundle
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: app-release-bundle
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab      
+          name: AAB-30900-LOGO-FIX
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
