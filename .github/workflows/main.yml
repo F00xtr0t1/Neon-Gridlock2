@@ -75,4 +75,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeoGridlock-4.1.0-30900
-          path: build/platforms/android/build/outputs/bundle/release/*.aab
+          path: build/**/*.aab
+          if-no-files-found: error
