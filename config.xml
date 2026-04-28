@@ -1,12 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.neogridlock.myapp" version="4.5.5" android-versionCode="30905" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="COLOQUE_AQUI_O_ID_DA_LOJA" version="4.5.5" android-versionCode="30906" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>Neo Gridlock</name>
     <description>F00XGAMES - Neon Gridlock Pro</description>
     <author email="seu@email.com">F00XGAMES</author>
     <content src="index.html" />
     <access origin="*" />
-    <preference name="Orientation" value="portrait" />
-    <preference name="FullScreen" value="true" />
     
     <platform name="android">
         <preference name="android-minSdkVersion" value="24" />
