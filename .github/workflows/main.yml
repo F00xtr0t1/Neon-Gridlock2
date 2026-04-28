@@ -32,16 +32,15 @@ jobs:
           cd build
           cordova platform add android@14.0.0
           
-          # COPIA OS ARQUIVOS DO SEU REPOSITÓRIO PARA O PROJETO
+          # Copia seus arquivos para a pasta de build
           cp ../index.html www/index.html
           cp ../config.xml config.xml
           cp -r ../assets www/assets || echo "Sem assets"
           
-          # PREPARA O ÍCONE
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem icone"
           
-      - name: Injeta Icones no Sistema
+      - name: Injeta Icones
         run: |
           cd build
           for size in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
