@@ -31,25 +31,17 @@ jobs:
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
-          
           cp ../index.html www/index.html
-          cp -r ../assets www/assets || echo "Sem pasta assets"
-          
-          # Atualiza versão para 4.5.5
+          cp -r ../assets www/assets || echo "Sem assets"
           sed -i 's/version="1.0.0"/version="4.5.5"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="30905"/' config.xml
           
-      - name: Configura Icone e Remove Robo (API 35)
+      - name: Configura SDK e Icone
         run: |
           cd build
           mkdir -p res/icon
-          cp ../res/icon/icon.png res/icon/icon.png || echo "Usando ícone padrão"
-          
-          # INJETA CONFIGURAÇÕES PARA MATAR O ROBOZINHO
-          # Usamos o fundo escuro do seu jogo e desativamos o splash padrão
+          cp ../res/icon/icon.png res/icon/icon.png || echo "Sem icone"
           sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="AutoHideSplashScreen" value="true" />\n    <preference name="AndroidWindowSplashScreenBackground" value="#02111a" />\n</widget>#' config.xml
-          
-          # Garante que o ícone do sistema seja o seu icon.png
           for size in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p platforms/android/app/src/main/res/mipmap-$size
             cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher.png || true
