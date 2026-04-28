@@ -28,34 +28,39 @@ jobs:
 
       - name: Create Project
         run: |
+          # AQUI: Mude 'ID_DA_LOJA' para o nome que aparece no seu Google Play Console
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # Copia seus arquivos para a pasta de build
+          # Copia o index.html (Zoro), config.xml e assets
           cp ../index.html www/index.html
           cp ../config.xml config.xml
           cp -r ../assets www/assets || echo "Sem assets"
           
+          # Garante a pasta do ícone
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem icone"
           
-      - name: Injeta Icones
+      - name: Configurar Icones do Sistema
         run: |
           cd build
+          # Aplica seu ícone em todas as resoluções para matar o robô
           for size in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p platforms/android/app/src/main/res/mipmap-$size
             cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher.png || true
             cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher_round.png || true
           done
 
-      - name: Build
+      - name: Build Android App Bundle
         run: |
           cd build
+          # Gera o AAB pronto para assinar e subir
           cordova build android --release -- --packageType=bundle
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-4.5.5-30905
+          name: NeoGridlock-4.5.5-API35
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+      
