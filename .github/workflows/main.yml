@@ -31,17 +31,19 @@ jobs:
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
-          cp ../index.html www/index.html
-          cp -r ../assets www/assets || echo "Sem assets"
-          sed -i 's/version="1.0.0"/version="4.5.5"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="30905"/' config.xml
           
-      - name: Configura SDK e Icone
-        run: |
-          cd build
+          # COPIA OS ARQUIVOS DO SEU REPOSITÓRIO PARA O PROJETO
+          cp ../index.html www/index.html
+          cp ../config.xml config.xml
+          cp -r ../assets www/assets || echo "Sem assets"
+          
+          # PREPARA O ÍCONE
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem icone"
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="AutoHideSplashScreen" value="true" />\n    <preference name="AndroidWindowSplashScreenBackground" value="#02111a" />\n</widget>#' config.xml
+          
+      - name: Injeta Icones no Sistema
+        run: |
+          cd build
           for size in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             mkdir -p platforms/android/app/src/main/res/mipmap-$size
             cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher.png || true
