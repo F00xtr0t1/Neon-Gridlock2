@@ -1,4 +1,4 @@
-name: Build AAB Neo Gridlock
+Name: Build AAB Neo Gridlock
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   android-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,25 +28,49 @@ jobs:
 
       - name: Create Project
         run: |
+          # PACKAGE: com.neogridlock.myapp
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
+          # COPIA SÓ O NECESSÁRIO
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          sed -i 's/version="1.0.0"/version="4.7.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="47000"/' config.xml
+          # ATUALIZA VERSÃO PARA 4.5.5
+          sed -i 's/version="1.0.0"/version="4.5.5"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="30905"/' config.xml
           
-      - name: Adicionar logo e SDK 35 + MATAR ROBO
+      - name: Configura Icone e Remove Robo (API 35)
         run: |
           cd build
           mkdir -p res/icon
-          cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
+          cp ../res/icon/icon.png res/icon/icon.png || echo "Ícone não encontrado, usando padrão"
           
-          echo "=== PACKAGE QUE VAI PRO AAB ==="
-          grep "id=" config.xml
-          echo "=============================="
+          # REMOVE O ROBOZINHO: Injeta as preferências de Splash do Android 12+ (API 35)
+          # Definimos o fundo como a cor escura do seu jogo (#02111a)
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <preference name="SplashScreen" value="none" />\n    <preference name="AutoHideSplashScreen" value="true" />\n    <preference name="AndroidWindowSplashScreenBackground" value="#02111a" />\n    <preference name="SplashShowOnlyFirstTime" value="false" />\n</widget>#' config.xml
           
-          # AWK NÃO TRAVA - SUBSTITUI O SED
-          awk '/<\/widget>/{print "    <icon src=\"res/icon/icon.png\" />\n    <preference name=\"android-targetSdkVersion\" value=\"35\" />\n    <preference name=\"android-compileSdkVersion\" value=\"35\" />\n    <preference
+          # Garante que o ícone do sistema seja o seu icon.png e não o robô
+          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+
+      - name: Build
+        run: |
+          cd build
+          # Build limpo para API 35
+          cordova build android --release -- --packageType=bundle
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoGridlock-4.5.5-30905
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
