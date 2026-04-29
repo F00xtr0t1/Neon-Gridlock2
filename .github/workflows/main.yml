@@ -1,67 +1,45 @@
-name: Build AAB Neo Gridlock
+name: Build AAB sem Robo
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   android-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout Código
-        uses: actions/checkout@v4
-
-      - name: Configurar Node e Java
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
       - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: Instalar Cordova
-        run: npm install -g cordova@latest
+        with: {distribution: 'temurin', java-version: '17'}
+      - run: npm install -g cordova@latest
 
-      - name: Criar Projeto e Copiar Arquivos
+      - name: Criar projeto + Matar Robo
         run: |
-          # Cria a pasta de build do zero
+          # O cordova create já gera o config.xml novo
           cordova create build com.neogridlock.myapp "Neo Gridlock"
-          
-          # Garante que as pastas de destino existam
-          mkdir -p build/www
-          mkdir -p build/res/icon
-          
-          # Copia seus arquivos (Zoro e Assets)
-          cp index.html build/www/index.html || echo "Aviso: index.html não encontrado na raiz"
-          cp config.xml build/config.xml || echo "Aviso: config.xml não encontrado na raiz"
-          cp -r assets build/www/assets || echo "Aviso: pasta assets não encontrada"
-          
-          # Tenta copiar seu ícone se ele existir
-          mkdir -p res/icon
-          cp res/icon/icon.png build/res/icon/icon.png || echo "Aviso: ícone não encontrado"
-
-      - name: Configurar Plataforma e Ícones
-        run: |
           cd build
           cordova platform add android@14.0.0
           
-          # Força o ícone nas pastas do sistema Android
-          for size in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            mkdir -p platforms/android/app/src/main/res/mipmap-$size
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher.png || echo "Falha ao copiar ícone $size"
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$size/ic_launcher_round.png || echo "Falha ao copiar ícone redondo $size"
-          done
-
-      - name: Build Final AAB
-        run: |
-          cd build
-          # Build para API 35 (Android 15)
+          # Copia teu index.html
+          cp ../index.html www/index.html
+          cp -r ../assets www/assets || true
+          
+          # FORÇA VERSÃO 4.7.0 DIRETO NO CONFIG.XML GERADO
+          sed -i 's/version="1.0.0"/version="4.7.0"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="47000"/' config.xml
+          
+          # MATA O ROBO DIRETO NO STYLES.XML DO ANDROID
+          STYLES="platforms/android/app/src/main/res/values/styles.xml"
+          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item></style>#' $STYLES
+          
+          echo "=== SE APARECER TRANSPARENT, ROBO MORREU ==="
+          grep "windowSplashScreen" $STYLES
+          echo "=========================================="
+          
           cordova build android --release -- --packageType=bundle
 
-      - name: Upload do AAB
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-Pro-API35
-          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+          name: aab-sem-robo-4.7.0
+          path: build/**/*.aab
