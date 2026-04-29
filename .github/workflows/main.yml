@@ -1,45 +1,71 @@
-name: Build AAB sem Robo
+name: Build AAB Neo Gridlock
 
-on: workflow_dispatch
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   android-build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 20}
-      - uses: actions/setup-java@v4
-        with: {distribution: 'temurin', java-version: '17'}
-      - run: npm install -g cordova@latest
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Criar projeto + Matar Robo
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Install Cordova
+        run: npm install -g cordova@latest
+
+      - name: Create Project
         run: |
-          # O cordova create já gera o config.xml novo
           cordova create build com.neogridlock.myapp "Neo Gridlock"
           cd build
           cordova platform add android@14.0.0
           
-          # Copia teu index.html
           cp ../index.html www/index.html
-          cp -r ../assets www/assets || true
+          cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # FORÇA VERSÃO 4.7.0 DIRETO NO CONFIG.XML GERADO
-          sed -i 's/version="1.0.0"/version="4.7.0"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="47000"/' config.xml
+          # VERSIONCODE MAIOR QUE 30900 PRA PASSAR NO PLAY CONSOLE
+          sed -i 's/version="1.0.0"/version="4.8.1"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="48001"/' config.xml
           
-          # MATA O ROBO DIRETO NO STYLES.XML DO ANDROID
+      - name: Adicionar logo, SDK 35 e MATAR ROBO
+        run: |
+          cd build
+          mkdir -p res/icon
+          cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
+          
+          echo "=== PACKAGE QUE VAI PRO AAB ==="
+          grep "id=" config.xml
+          echo "=============================="
+          
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" /></widget>#' config.xml
+          
+          # ESSAS 3 LINHAS MATAM O ROBO - ADICIONEI AQUI
           STYLES="platforms/android/app/src/main/res/values/styles.xml"
           sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item></style>#' $STYLES
-          
-          echo "=== SE APARECER TRANSPARENT, ROBO MORREU ==="
+          echo "=== ROBO MORTO SE APARECER TRANSPARENT ==="
           grep "windowSplashScreen" $STYLES
           echo "=========================================="
           
-          cordova build android --release -- --packageType=bundle
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: aab-sem-robo-4.7.0
-          path: build/**/*.aab
+          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
+          cp res/icon/icon.png platforms/android/app/src/main/res/m
