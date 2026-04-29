@@ -36,41 +36,44 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          # VERSIONCODE MAIOR QUE 30900 PRA PASSAR NO PLAY CONSOLE
           sed -i 's/version="1.0.0"/version="4.8.1"/' config.xml
           sed -i 's/android-versionCode="1"/android-versionCode="48001"/' config.xml
           
-      - name: Adicionar logo, SDK 35 e MATAR ROBO
+      - name: Configurar XML e Remover Robo
         run: |
           cd build
+          
+          # Adiciona Logo e SDK 35
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" /></widget>#' config.xml
+
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
           
-          echo "=== PACKAGE QUE VAI PRO AAB ==="
+          echo "=== PACKAGE ==="
           grep "id=" config.xml
-          echo "=============================="
+          echo "==============="
           
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" /></widget>#' config.xml
-          
-          # CORREÇÃO: THEMES.XML NO LUGAR DE STYLES.XML
+          # PREPARA para gerar os arquivos
           cordova prepare android
+          
+          # AGORA SIM, EDITA O THEMES.XML
           THEMES="platforms/android/app/src/main/res/values/themes.xml"
-          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item><item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item></style>#' $THEMES
           
-          echo "=== ROBO MORTO SE APARECER TRANSPARENT ==="
+          # APAGA tudo que é referência a robô/ícone e deixa transparente
+          sed -i '/windowSplashScreenAnimatedIcon/d' $THEMES
+          sed -i '/windowSplashScreenIconBackgroundColor/d' $THEMES
+          
+          # COLA a configuração correta ANTES do fechamento da tag </style>
+          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@color/black</item></style>#' $THEMES
+          
+          echo "✅ ROBO REMOVIDO COM SUCESSO"
           grep "windowSplashScreen" $THEMES
-          echo "=========================================="
-          
-          mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-hdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxhdpi
-          mkdir -p platforms/android/app/src/main/res/mipmap-xxxhdpi
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
-          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+
+          # SUBSTITUI ICONE DO APP
+          mkdir -p platforms/android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
+          for dpi in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$dpi/ic_launcher.png || true
+          done
 
       - name: Build
         run: |
