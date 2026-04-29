@@ -52,11 +52,13 @@ jobs:
           
           sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" /></widget>#' config.xml
           
-          # ESSAS 3 LINHAS MATAM O ROBO - ADICIONEI AQUI
-          STYLES="platforms/android/app/src/main/res/values/styles.xml"
-          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item></style>#' $STYLES
+          # CORREÇÃO: THEMES.XML NO LUGAR DE STYLES.XML
+          cordova prepare android
+          THEMES="platforms/android/app/src/main/res/values/themes.xml"
+          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item><item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item></style>#' $THEMES
+          
           echo "=== ROBO MORTO SE APARECER TRANSPARENT ==="
-          grep "windowSplashScreen" $STYLES
+          grep "windowSplashScreen" $THEMES
           echo "=========================================="
           
           mkdir -p platforms/android/app/src/main/res/mipmap-mdpi
@@ -68,4 +70,15 @@ jobs:
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
           cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
-          cp res/icon/icon.png platforms/android/app/src/main/res/m
+          cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+
+      - name: Build
+        run: |
+          cd build
+          cordova build android --release -- --packageType=bundle
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoGridlock-4.8.1-48001-sem-robo
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
