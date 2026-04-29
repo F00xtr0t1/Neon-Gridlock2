@@ -43,8 +43,8 @@ jobs:
         run: |
           cd build
           
-          # ✅ ADICIONEI A PERMISSÃO DE VIBRAR AQUI
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <uses-permission android:name="android.permission.VIBRATE" /></widget>#' config.xml
+          # ✅ CORRIGIDO: Usando # como separador e sintaxe correta
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n</widget>#' config.xml
 
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
@@ -66,7 +66,7 @@ jobs:
 
           mkdir -p platforms/android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
           for dpi in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$dpi/ic_launcher.png || true
+            cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$dpi/ic__launcher.png || true
           done
 
       - name: Build
