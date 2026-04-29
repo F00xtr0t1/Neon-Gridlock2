@@ -36,8 +36,8 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          sed -i 's/version="1.0.0"/version="4.8.1"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="48001"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.8.2"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="48002"/' config.xml
           
       - name: Configurar XML e Remover Robo
         run: |
@@ -59,12 +59,12 @@ jobs:
           # AGORA SIM, EDITA O THEMES.XML
           THEMES="platforms/android/app/src/main/res/values/themes.xml"
           
-          # APAGA tudo que é referência a robô/ícone e deixa transparente
+          # APAGA tudo que é referência a robô/ícone
           sed -i '/windowSplashScreenAnimatedIcon/d' $THEMES
           sed -i '/windowSplashScreenIconBackgroundColor/d' $THEMES
           
-          # COLA a configuração correta ANTES do fechamento da tag </style>
-          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@color/black</item></style>#' $THEMES
+          # ✅ CORREÇÃO AQUI: Usa @android:color/black que existe no sistema
+          sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item></style>#' $THEMES
           
           echo "✅ ROBO REMOVIDO COM SUCESSO"
           grep "windowSplashScreen" $THEMES
