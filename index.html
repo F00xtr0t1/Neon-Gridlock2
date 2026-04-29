@@ -114,6 +114,7 @@
         .pieces-selector { 
             display: none; gap: 12px; margin-top: 15px; 
             background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 15px;
+            position: relative;
         }
 
         .slot { 
@@ -122,11 +123,24 @@
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center; 
             transition: opacity 0.3s ease, filter 0.3s ease;
+            position: relative;
         }
         
         .slot.disabled {
             opacity: 0.15;
             filter: grayscale(1) brightness(0.3);
+        }
+
+        /* ESTILO DO TEXTO DO TUTORIAL */
+        .tutorial-text {
+            position: absolute;
+            bottom: -25px;
+            font-size: 10px;
+            color: var(--cyan-neon);
+            text-shadow: 0 0 5px var(--cyan-neon);
+            opacity: 0.8;
+            width: 100%;
+            text-align: center;
         }
 
         #game-over { 
@@ -235,6 +249,20 @@
     document.getElementById('best-level').innerText = `FASE ${bestLevel}`;
     document.getElementById('best-score').innerText = bestScore;
 
+    // --- CÓDIGO PARA PARAR MÚSICA AO SAIR ---
+    document.addEventListener('pause', function() {
+        if (bgMusic) {
+            bgMusic.pause();
+        }
+    }, false);
+
+    document.addEventListener('resume', function() {
+        if (bgMusic && !isMuted) {
+            bgMusic.play().catch(()=>{});
+        }
+    }, false);
+    // --- FIM DO CÓDIGO DA MÚSICA ---
+
     function playSound(type) {
         if (isMuted || !audioCtx) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -259,20 +287,4 @@
                 osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
                 gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
                 osc.start(); osc.stop(now + 0.1); break;
-            case 'break':
-                osc.type = 'square'; osc.frequency.setValueAtTime(300 + (comboCount * 50), now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
-                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(); osc.stop(now + 0.2); break;
-        }
-    }
-
-    const imgAssets = {};
-    const assetFiles = { base: 'bloco.png', "⭐": 'estrela.png', "🔥": 'fogo.png', "⚡": 'raio.png' };
-
-    function loadAssets(callback) {
-        let loaded = 0;
-        const keys = Object.keys(assetFiles);
-        keys.forEach(key => {
-            const img = new Image(); img.src = './assets/' + assetFiles[key];
-            img.onload = () => { imgAssets[key] = img; if(++loaded === keys.length) callback
-
+            case
