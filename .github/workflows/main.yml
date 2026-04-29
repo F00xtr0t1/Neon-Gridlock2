@@ -36,15 +36,15 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          sed -i 's/version="1.0.0"/version="4.8.2"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="48002"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.8.3"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="48003"/' config.xml
           
-      - name: Configurar XML e Remover Robo
+      - name: Configurar XML, Remover Robo e Liberar Vibração
         run: |
           cd build
           
-          # Adiciona Logo e SDK 35
-          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" /></widget>#' config.xml
+          # ✅ ADICIONEI A PERMISSÃO DE VIBRAR AQUI
+          sed -i 's#</widget>#    <icon src="res/icon/icon.png" />\n    <preference name="android-targetSdkVersion" value="35" />\n    <preference name="android-compileSdkVersion" value="35" />\n    <uses-permission android:name="android.permission.VIBRATE" /></widget>#' config.xml
 
           mkdir -p res/icon
           cp ../res/icon/icon.png res/icon/icon.png || echo "Sem logo"
@@ -53,23 +53,17 @@ jobs:
           grep "id=" config.xml
           echo "==============="
           
-          # PREPARA para gerar os arquivos
           cordova prepare android
           
-          # AGORA SIM, EDITA O THEMES.XML
           THEMES="platforms/android/app/src/main/res/values/themes.xml"
-          
-          # APAGA tudo que é referência a robô/ícone
           sed -i '/windowSplashScreenAnimatedIcon/d' $THEMES
           sed -i '/windowSplashScreenIconBackgroundColor/d' $THEMES
-          
-          # ✅ CORREÇÃO AQUI: Usa @android:color/black que existe no sistema
           sed -i 's#</style>#<item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item><item name="android:windowSplashScreenBackground">@android:color/black</item></style>#' $THEMES
           
-          echo "✅ ROBO REMOVIDO COM SUCESSO"
+          echo "✅ ROBO REMOVIDO E VIBRAÇÃO LIBERADA"
           grep "windowSplashScreen" $THEMES
+          grep "VIBRATE" config.xml
 
-          # SUBSTITUI ICONE DO APP
           mkdir -p platforms/android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
           for dpi in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
             cp res/icon/icon.png platforms/android/app/src/main/res/mipmap-$dpi/ic_launcher.png || true
@@ -83,5 +77,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NeoGridlock-4.8.1-48001-sem-robo
+          name: NeoGridlock-4.8.1-48001-sem-robo-com-vibracao
           path: build/platforms/android/app/build/outputs/bundle/release/*.aab
