@@ -36,8 +36,8 @@ jobs:
           cp ../index.html www/index.html
           cp -r ../assets www/assets || echo "Sem pasta assets"
           
-          sed -i 's/version="1.0.0"/version="4.8.4"/' config.xml
-          sed -i 's/android-versionCode="1"/android-versionCode="48004"/' config.xml
+          sed -i 's/version="1.0.0"/version="4.8.5"/' config.xml
+          sed -i 's/android-versionCode="1"/android-versionCode="48005"/' config.xml
           
       - name: Configurar XML e Remover Robo
         run: |
