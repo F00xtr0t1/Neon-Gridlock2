@@ -89,25 +89,12 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             margin-bottom: 10px;
             display: flex; justify-content: space-around; align-items: center;
-            position: relative;
         }
 
        .stat-group { display: flex; flex-direction: column; min-width: 80px; }
        .stat-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
        .stat-val { color: var(--cyan-neon); font-weight: bold; font-size: 22px; transition: color 0.3s; }
        .stat-sub { font-size: 11px; color: #ffd700; opacity: 0.8; }
-
-        #combo-display {
-            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-            font-size: 28px; font-weight: 900; color: #ffd700;
-            text-shadow: 0 0 10px #ffd700, 0 0 20px #ff4400;
-            opacity: 0; transition: all 0.3s ease;
-            pointer-events: none;
-        }
-
-        #combo-display.show {
-            opacity: 1; transform: translateX(-50%) scale(1.2);
-        }
 
         #mission-container {
             background: rgba(0,0,0,0.3); border-radius: 10px; padding: 8px; margin-bottom: 10px;
@@ -190,7 +177,6 @@
         <div style="width:40px"></div>
     </div>
     <div class="score-panel">
-        <div id="combo-display">1x</div>
         <div class="stat-group">
             <span class="stat-label">PONTOS</span>
             <div id="score" class="stat-val">0</div>
@@ -315,17 +301,6 @@
         return `hsl(${hue}, 100%, 60%)`;
     }
 
-    function updateComboDisplay() {
-        const comboEl = document.getElementById('combo-display');
-        if(comboCount > 0) {
-            comboEl.innerText = comboCount + 'x';
-            comboEl.style.color = getComboColor();
-            comboEl.classList.add('show');
-        } else {
-            comboEl.classList.remove('show');
-        }
-    }
-
     function drawBlock(context, type, x, y, w, h) {
         let img = imgAssets[type] || (type === 1? imgAssets.base : null);
         if (img && img.complete && img.naturalWidth!== 0) {
@@ -382,22 +357,13 @@
         document.getElementById('ui-container').style.display = 'block';
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
-
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        if(!isMuted) {
-            bgMusic.play().catch(()=>{});
-        }
-
+        if(!isMuted) bgMusic.play().catch(()=>{});
         setupLevel();
         requestAnimationFrame(loop);
     }
 
-    function toggleMute() {
-        isMuted =!isMuted;
-        document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊";
-        isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{});
-    }
+    function toggleMute() { isMuted =!isMuted; document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊"; isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{}); }
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
@@ -415,6 +381,7 @@
         if(level > bestLevel) { bestLevel = level; localStorage.setItem('neonGridlock_bestLevel', bestLevel); document.getElementById('best-level').innerText = `FASE ${bestLevel}`; }
         document.getElementById('level-txt').innerText = `FASE ${level}`;
 
+        // TUTORIAL SÓ NA FASE 1
         const tutorial = document.getElementById('tutorial');
         if(level === 1) {
             tutorial.style.display = 'block';
@@ -484,7 +451,6 @@
         for(let c=0; c<8; c++) { let full = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) full = false; if(full) cf.push(c); }
         if(rf.length || cf.length) {
             comboCount++; comboTimer = comboMaxTime;
-            updateComboDisplay();
 
             if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
 
@@ -528,13 +494,14 @@
     function checkGameOver() {
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        if (!ok && pieces.some(p => p!== null)) { isGameOver = true; document.getElementById('game-over').style.display = 'flex'; document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><span style="color:#ffd700">RECORDE: ${bestScore} (FASE ${bestLevel})</span>`; }
+        if (!ok && pieces.some(p => p!== null)) { isGameOver = true; document.getElementById('game-over').style.display = 'flex'; document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><br><span style="color:#ffd700">RECORDE: ${bestScore} (FASE ${bestLevel})</span>`; }
     }
 
     window.addEventListener('touchstart', e => {
         if(isGameOver || inTransition) return;
         const t = e.touches[0]; moved = false; lastTap = Date.now();
 
+        // ESCONDE TUTORIAL NO PRIMEIRO TOQUE
         if(level === 1) document.getElementById('tutorial').style.display = 'none';
 
         for(let i=0; i<3; i++) {
@@ -565,15 +532,7 @@
     });
 
     function loop() {
-        if(comboCount > 0) {
-            comboTimer--;
-            if(comboTimer <= 0) {
-                comboCount = 0;
-                canvas.style.borderColor = "rgba(0, 255, 0.3)";
-                document.getElementById('score').style.color = "#00ffff";
-                updateComboDisplay();
-            }
-        }
+        if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
         ctx.clearRect(-40,-40,400,400);
@@ -591,6 +550,12 @@
         ctx.restore();
         requestAnimationFrame(loop);
     }
+    window.onload = () => { loadAssets(() => { document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').innerText = "COMEÇAR"; initStartScreenAnim(); }); };
+</script>
+</body>
+</html>
 
-    // PARA O SOM QUANDO MINIMIZA OU FECHA O APP - CORRIGIDO
-    document.addEventListener('pause', () => {
+
+
+
+Com o tutorial
