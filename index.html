@@ -2,7 +2,10 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Neon Gridlock - Pro Edition</title>
     <style>
         :root {
@@ -13,6 +16,10 @@
             --text-main: #b0e0e6;
         }
 
+        html {
+            height: -webkit-fill-available;
+        }
+
         body {
             background: var(--bg-dark);
             color: var(--text-main);
@@ -20,6 +27,10 @@
             display: flex; flex-direction: column; align-items: center;
             margin: 0; overflow: hidden; touch-action: none;
             transition: background 1.5s ease-in-out;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            box-sizing: border-box;
         }
 
         #start-screen {
@@ -27,6 +38,8 @@
             background: radial-gradient(circle at center, #0a2a3a 0%, #02111a 70%);
             z-index: 2000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
         }
 
         #start-bg-canvas {
@@ -38,7 +51,7 @@
        .main-logo {
             font-size: 42px; font-weight: 900; color: #fff;
             text-transform: uppercase; letter-spacing: 2px;
-            text-shadow: 0 0 10px #fff, 0 0 20px var(--cyan-neon), 0 0 30px var(--cyan-neon);
+            text-shadow: 0 10px #fff, 0 0 20px var(--cyan-neon), 0 0 30px var(--cyan-neon);
             animation: logo-pulse 2s infinite alternate;
             z-index: 10; margin-bottom: 40px; text-align: center;
         }
@@ -67,7 +80,14 @@
             box-shadow: 0 0 30px var(--cyan-glow); transform: scale(1.05);
         }
 
-        #ui-container { margin: 15px 10px; text-align: center; width: 90%; max-width: 340px; z-index: 10; display: none; }
+        #ui-container {
+            margin: 15px 10px;
+            text-align: center;
+            width: 90%;
+            max-width: 340px;
+            z-index: 10;
+            display: none;
+        }
 
        .top-bar {
             display: flex; justify-content: space-between; align-items: center;
@@ -89,12 +109,25 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             margin-bottom: 10px;
             display: flex; justify-content: space-around; align-items: center;
+            position: relative;
         }
 
        .stat-group { display: flex; flex-direction: column; min-width: 80px; }
        .stat-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
        .stat-val { color: var(--cyan-neon); font-weight: bold; font-size: 22px; transition: color 0.3s; }
        .stat-sub { font-size: 11px; color: #ffd700; opacity: 0.8; }
+
+        #combo-display {
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            font-size: 28px; font-weight: 900; color: #ffd700;
+            text-shadow: 0 0 10px #ffd700, 0 0 20px #ff4400;
+            opacity: 0; transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        #combo-display.show {
+            opacity: 1; transform: translateX(-50%) scale(1.2);
+        }
 
         #mission-container {
             background: rgba(0,0,0,0.3); border-radius: 10px; padding: 8px; margin-bottom: 10px;
@@ -114,6 +147,7 @@
        .pieces-selector {
             display: none; gap: 12px; margin-top: 15px;
             background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 15px;
+            margin-bottom: max(15px, env(safe-area-inset-bottom));
         }
 
        .slot {
@@ -133,6 +167,7 @@
             display: none; text-align: center; margin-top: 8px; font-size: 12px;
             color: var(--cyan-neon); text-shadow: 0 0 8px var(--cyan-glow);
             animation: tutorial-pulse 1.5s infinite;
+            margin-bottom: max(8px, env(safe-area-inset-bottom));
         }
 
         @keyframes tutorial-pulse {
@@ -143,6 +178,8 @@
         #game-over {
             position: fixed; inset: 0; background: rgba(2, 17, 26, 0.98);
             z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
         }
 
         #level-transition {
@@ -177,6 +214,7 @@
         <div style="width:40px"></div>
     </div>
     <div class="score-panel">
+        <div id="combo-display">1x</div>
         <div class="stat-group">
             <span class="stat-label">PONTOS</span>
             <div id="score" class="stat-val">0</div>
@@ -186,7 +224,6 @@
             <div id="best-score" class="stat-val" style="color:#ffd700">0</div>
             <div id="best-level" class="stat-sub">FASE 1</div>
         </div>
-    </div>
     <div id="mission-container"></div>
 </div>
 
@@ -214,6 +251,15 @@
 </audio>
 
 <script>
+    document.addEventListener('deviceready', () => {
+        if (window.AndroidFullScreen) {
+            AndroidFullScreen.immersiveMode();
+        }
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(()=>{});
+        }
+    }, false);
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
@@ -301,6 +347,17 @@
         return `hsl(${hue}, 100%, 60%)`;
     }
 
+    function updateComboDisplay() {
+        const comboEl = document.getElementById('combo-display');
+        if(comboCount > 0) {
+            comboEl.innerText = comboCount + 'x';
+            comboEl.style.color = getComboColor();
+            comboEl.classList.add('show');
+        } else {
+            comboEl.classList.remove('show');
+        }
+    }
+
     function drawBlock(context, type, x, y, w, h) {
         let img = imgAssets[type] || (type === 1? imgAssets.base : null);
         if (img && img.complete && img.naturalWidth!== 0) {
@@ -357,13 +414,22 @@
         document.getElementById('ui-container').style.display = 'block';
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
+
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if(!isMuted) bgMusic.play().catch(()=>{});
+
+        if(!isMuted) {
+            bgMusic.play().catch(()=>{});
+        }
+
         setupLevel();
         requestAnimationFrame(loop);
     }
 
-    function toggleMute() { isMuted =!isMuted; document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊"; isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{}); }
+    function toggleMute() {
+        isMuted =!isMuted;
+        document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊";
+        isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{});
+    }
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
@@ -381,7 +447,6 @@
         if(level > bestLevel) { bestLevel = level; localStorage.setItem('neonGridlock_bestLevel', bestLevel); document.getElementById('best-level').innerText = `FASE ${bestLevel}`; }
         document.getElementById('level-txt').innerText = `FASE ${level}`;
 
-        // TUTORIAL SÓ NA FASE 1
         const tutorial = document.getElementById('tutorial');
         if(level === 1) {
             tutorial.style.display = 'block';
@@ -451,6 +516,7 @@
         for(let c=0; c<8; c++) { let full = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) full = false; if(full) cf.push(c); }
         if(rf.length || cf.length) {
             comboCount++; comboTimer = comboMaxTime;
+            updateComboDisplay();
 
             if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
 
@@ -494,14 +560,13 @@
     function checkGameOver() {
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        if (!ok && pieces.some(p => p!== null)) { isGameOver = true; document.getElementById('game-over').style.display = 'flex'; document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><br><span style="color:#ffd700">RECORDE: ${bestScore} (FASE ${bestLevel})</span>`; }
+        if (!ok && pieces.some(p => p!== null)) { isGameOver = true; document.getElementById('game-over').style.display = 'flex'; document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><span style="color:#ffd700">RECORDE: ${bestScore} (FASE ${bestLevel})</span>`; }
     }
 
     window.addEventListener('touchstart', e => {
         if(isGameOver || inTransition) return;
         const t = e.touches[0]; moved = false; lastTap = Date.now();
 
-        // ESCONDE TUTORIAL NO PRIMEIRO TOQUE
         if(level === 1) document.getElementById('tutorial').style.display = 'none';
 
         for(let i=0; i<3; i++) {
@@ -532,7 +597,15 @@
     });
 
     function loop() {
-        if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
+        if(comboCount > 0) {
+            comboTimer--;
+            if(comboTimer <= 0) {
+                comboCount = 0;
+                canvas.style.borderColor = "rgba(0, 255, 0.3)";
+                document.getElementById('score').style.color = "#00ffff";
+                updateComboDisplay();
+            }
+        }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
         ctx.clearRect(-40,-40,400,400);
@@ -540,17 +613,7 @@
         if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(0, 0, 320, 320); }
         if(comboCount > 0) { const cColor = getComboColor(); ctx.strokeStyle = cColor; ctx.lineWidth = 4; const progress = comboTimer / comboMaxTime; const offset = 160 * (1 - progress); ctx.beginPath(); ctx.moveTo(offset, 2); ctx.lineTo(320 - offset, 2); ctx.moveTo(offset, 318); ctx.lineTo(320 - offset, 318); ctx.moveTo(2, offset); ctx.lineTo(2, 320 - offset); ctx.moveTo(318, offset); ctx.lineTo(318, 320 - offset); ctx.stroke(); canvas.style.borderColor = cColor; }
 
-        for(let r=0; r<8; r++) for(let c=0; c<8; c++) { ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(c*size, r*size, size-1, size-1); if(grid[r][c]) drawBlock(ctx, grid[r][c], c*size, r*size, size-1, size-1); }
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) { ctx.fillStyle = "rgba(0, 255, 0.05)"; ctx.fillRect(c*size, r*size, size-1, size-1); if(grid[r][c]) drawBlock(ctx, grid[r][c], c*size, r*size, size-1, size-1); }
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
 
-        comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx.shadowBlur = 10; ctx.shadowColor = ct.color; ctx.fillText(ct.text, ct.x, ct.y); ctx.shadowBlur = 0; ct.y -= 1; ct.alpha -= 0.02; ct.scale += 0.01; if(ct.alpha <= 0) comboTexts.splice(i, 1); });
-
-        ctx.globalAlpha = 1;
-        if(dragPiece && moved) { const rct = canvas.getBoundingClientRect(); dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) { let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); drawBlock(ctx, v, dx, dy, size-1, size-1); } })); }
-        ctx.restore();
-        requestAnimationFrame(loop);
-    }
-    window.onload = () => { loadAssets(() => { document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').innerText = "COMEÇAR"; initStartScreenAnim(); }); };
-</script>
-</body>
-</html>
+        comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx
