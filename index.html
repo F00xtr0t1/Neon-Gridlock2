@@ -20,8 +20,6 @@
             display: flex; flex-direction: column; align-items: center;
             margin: 0; overflow: hidden; touch-action: none;
             transition: background 1.5s ease-in-out;
-            
-            /* Garanter que o body ocupe a tela toda, incluindo área de recortes */
             min-height: 100vh;
             min-height: -webkit-fill-available;
         }
@@ -31,8 +29,6 @@
             background: radial-gradient(circle at center, #0a2a3a 0%, #02111a 70%);
             z-index: 2000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            
-            /* Safe area para a tela de início (botão e logo) */
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -41,7 +37,7 @@
             position: absolute; inset: 0;
             width: 100%; height: 100%;
             opacity: 0.3;
-            z-index: 1; /* Fica atrás de tudo na start-screen */
+            z-index: 1;
         }
 
        .main-logo {
@@ -50,7 +46,7 @@
             text-shadow: 0 0 10px #fff, 0 0 20px var(--cyan-neon), 0 0 30px var(--cyan-neon);
             animation: logo-pulse 2s infinite alternate;
             z-index: 10; margin-bottom: 40px; text-align: center;
-            position: relative; /* Para respeitar z-index */
+            position: relative;
         }
 
         @keyframes logo-pulse {
@@ -68,7 +64,7 @@
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
             transition: all 0.3s ease;
             z-index: 10; outline: none;
-            position: relative; /* Para respeitar z-index */
+            position: relative;
         }
 
        .start-btn:disabled { opacity: 0.3; border-color: #555; color: #555; cursor: wait; }
@@ -78,26 +74,22 @@
             box-shadow: 0 0 30px var(--cyan-glow); transform: scale(1.05);
         }
 
-        /* CONTAINER PRINCIPAL DO JOGO - Onde a mágica da Safe Area acontece */
         #game-container {
             display: flex; flex-direction: column; align-items: center;
             width: 100%;
-            height: 100vh; /* Ocupa a altura total */
-            
-            /* ADICIONADO: Safe area para o conteúdo do jogo */
+            height: 100vh;
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
-            
-            box-sizing: border-color; /* Garanter que padding não aumente tamanho */
+            box-sizing: border-box;
         }
 
         #ui-container { 
             margin: 15px 10px; text-align: center; 
             width: 90%; max-width: 340px; z-index: 10; 
             display: none; 
-            flex-shrink: 0; /* Impede a UI de encolher */
+            flex-shrink: 0;
         }
 
        .top-bar {
@@ -140,13 +132,13 @@
             background: rgba(0, 5, 10, 0.8); border: 2px solid rgba(0, 255, 255, 0.3);
             border-radius: 12px; display: none; margin: 0 auto;
             transition: border-color 0.3s;
-            flex-grow: 0; flex-shrink: 0; /* Mantém tamanho do canvas fixo */
+            flex-grow: 0; flex-shrink: 0;
         }
 
        .pieces-selector {
             display: none; gap: 12px; margin-top: 15px;
             background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 15px;
-            flex-shrink: 0; /* Impede seletores de encolher */
+            flex-shrink: 0;
         }
 
        .slot {
@@ -176,8 +168,6 @@
         #game-over {
             position: fixed; inset: 0; background: rgba(2, 17, 26, 0.98);
             z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
-            
-            /* Safe area para a tela de Game Over */
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -240,7 +230,9 @@
         👆 TOQUE PARA GIRAR AS PEÇAS<br>
         ARRASTE PARA O TABULEIRO
     </div>
-</div> <div id="game-over">
+</div>
+
+<div id="game-over">
     <h2 style="color:#ff4444; font-size:32px; text-shadow: 0 0 15px rgba(255,0,0,0.5);">GAME OVER</h2>
     <p id="final-stats" style="color:#fff; text-align: center; line-height: 1.6;"></p>
     <button class="start-btn" onclick="location.reload()">RECOMEÇAR</button>
@@ -289,7 +281,7 @@
     document.getElementById('best-score').innerText = bestScore;
 
     function playSound(type) {
-        if (isMuted ||!audioCtx) return;
+        if (isMuted || !audioCtx) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -391,19 +383,16 @@
     function initGame() {
         cancelAnimationFrame(startAnimationId);
         document.getElementById('start-screen').style.display = 'none';
-        
-        // Ativa container principal e os containers internos
         document.getElementById('ui-container').style.display = 'block';
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
-        
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if(!isMuted) bgMusic.play().catch(()=>{});
         setupLevel();
         requestAnimationFrame(loop);
     }
 
-    function toggleMute() { isMuted =!isMuted; document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊"; isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{}); }
+    function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted? "🔇" : "🔊"; isMuted? bgMusic.pause() : bgMusic.play().catch(()=>{}); }
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
@@ -420,15 +409,9 @@
         }
         if(level > bestLevel) { bestLevel = level; localStorage.setItem('neonGridlock_bestLevel', bestLevel); document.getElementById('best-level').innerText = `FASE ${bestLevel}`; }
         document.getElementById('level-txt').innerText = `FASE ${level}`;
-
-        // TUTORIAL SÓ NA FASE 1
         const tutorial = document.getElementById('tutorial');
-        if(level === 1) {
-            tutorial.style.display = 'block';
-        } else {
-            tutorial.style.display = 'none';
-        }
-
+        if(level === 1) tutorial.style.display = 'block';
+        else tutorial.style.display = 'none';
         inTransition = false;
         newSet();
     }
@@ -491,9 +474,7 @@
         for(let c=0; c<8; c++) { let full = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) full = false; if(full) cf.push(c); }
         if(rf.length || cf.length) {
             comboCount++; comboTimer = comboMaxTime;
-
             if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-
             playSound('break');
             if(comboCount >= 2) shakeIntensity = 10;
             if(comboCount >= 4) shakeIntensity = 20;
@@ -507,16 +488,12 @@
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(c*size, r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
         }
-
         if(Object.values(missions).every(m => m.current >= m.goal)) {
             inTransition = true;
             const trans = document.getElementById('level-transition');
             document.getElementById('transition-text').innerText = `FASE ${level} CONCLUÍDA!`;
             trans.classList.add('show');
-            setTimeout(() => {
-                trans.classList.remove('show');
-                level++; setupLevel();
-            }, 1800);
+            setTimeout(() => { trans.classList.remove('show'); level++; setupLevel(); }, 1800);
         }
         updateUI();
     }
@@ -540,10 +517,7 @@
     window.addEventListener('touchstart', e => {
         if(isGameOver || inTransition) return;
         const t = e.touches[0]; moved = false; lastTap = Date.now();
-
-        // ESCONDE TUTORIAL NO PRIMEIRO TOQUE
         if(level === 1) document.getElementById('tutorial').style.display = 'none';
-
         for(let i=0; i<3; i++) {
             const slot = document.getElementById('slot'+i);
             const r = slot.getBoundingClientRect();
@@ -560,11 +534,8 @@
         if(!moved && (Date.now() - lastTap < 250)) { pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse()); playSound('rotate'); }
         else if(moved) {
             const rct = canvas.getBoundingClientRect();
-            
-            // Corrigido para centralizar a peça no dedo durante o arrasto
             const col = Math.round((mX - rct.left - (dragPiece[0].length*size/2)) / size);
             const row = Math.round((mY - DRAG_OFFSET_Y - rct.top - (dragPiece.length*size/2)) / size);
-            
             if(canPlace(dragPiece, row, col)) {
                 dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) grid[row+i][col+j] = v; }));
                 pieces[dragIdx] = null; playSound('place'); checkLines();
@@ -579,24 +550,17 @@
         if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
-        
-        // Limpa o canvas de forma responsiva
         ctx.clearRect(-40,-40,canvas.width + 80,canvas.height + 80);
-
         if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(0, 0, 320, 320); }
         if(comboCount > 0) { const cColor = getComboColor(); ctx.strokeStyle = cColor; ctx.lineWidth = 4; const progress = comboTimer / comboMaxTime; const offset = 160 * (1 - progress); ctx.beginPath(); ctx.moveTo(offset, 2); ctx.lineTo(320 - offset, 2); ctx.moveTo(offset, 318); ctx.lineTo(320 - offset, 318); ctx.moveTo(2, offset); ctx.lineTo(2, 320 - offset); ctx.moveTo(318, offset); ctx.lineTo(318, 320 - offset); ctx.stroke(); canvas.style.borderColor = cColor; }
-
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(c*size, r*size, size-1, size-1); if(grid[r][c]) drawBlock(ctx, grid[r][c], c*size, r*size, size-1, size-1); }
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
-
         comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx.shadowBlur = 10; ctx.shadowColor = ct.color; ctx.fillText(ct.text, ct.x, ct.y); ctx.shadowBlur = 0; ct.y -= 1; ct.alpha -= 0.02; ct.scale += 0.01; if(ct.alpha <= 0) comboTexts.splice(i, 1); });
-
         ctx.globalAlpha = 1;
         if(dragPiece && moved) { 
             const rct = canvas.getBoundingClientRect(); 
             dragPiece.forEach((rd, i) => rd.forEach((v, j) => { 
                 if(v) { 
-                    // Centraliza a peça sendo arrastada no dedo
                     let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); 
                     let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); 
                     drawBlock(ctx, v, dx, dy, size-1, size-1); 
@@ -606,7 +570,19 @@
         ctx.restore();
         requestAnimationFrame(loop);
     }
+
+    // --- NOVA FUNÇÃO PARA CONTROLE DE ÁUDIO EM SEGUNDO PLANO ---
+    document.addEventListener("pause", () => {
+        bgMusic.pause();
+    }, false);
+
+    document.addEventListener("resume", () => {
+        if (!isMuted) bgMusic.play().catch(()=>{});
+    }, false);
+    // ----------------------------------------------------------
+
     window.onload = () => { loadAssets(() => { document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').innerText = "COMEÇAR"; initStartScreenAnim(); }); };
 </script>
 </body>
 </html>
+
