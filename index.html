@@ -207,7 +207,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
-    const gridOffset = 10; // Margem para o efeito de luz
+    const gridOffset = 10; 
 
     const startCanvas = document.getElementById('start-bg-canvas');
     const sCtx = startCanvas.getContext('2d');
@@ -221,7 +221,8 @@
     let bestLevel = localStorage.getItem('neonGridlock_bestLevel') || 1;
     let bestScore = localStorage.getItem('neonGridlock_bestScore') || 0;
 
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
+    // Tempo de combo ajustado para 300 (mais rápido)
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 300, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
@@ -277,18 +278,6 @@
         }
     }
 
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            bgMusic.pause();
-            if(audioCtx) audioCtx.suspend();
-        } else {
-            if (!isMuted && document.getElementById('start-screen').style.display === 'none') {
-                bgMusic.play().catch(()=>{});
-                if(audioCtx) audioCtx.resume();
-            }
-        }
-    });
-
     function exitToHome() {
         bgMusic.pause();
         bgMusic.currentTime = 0;
@@ -332,10 +321,6 @@
             context.fillRect(x + 2, y + 2, w - 4, h - 4);
             context.shadowBlur = 0;
         }
-    }
-
-    function spawnComboText(txt) {
-        comboTexts.push({ text: txt, x: 170, y: 170, alpha: 1, scale: 1, color: getComboColor() });
     }
 
     function initStartScreenAnim() {
@@ -592,9 +577,8 @@
         }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
-        ctx.clearRect(-40,-40,400,400);
+        ctx.clearRect(-40,-40,420,420);
 
-        // --- EFEITO DE LUZ COMBO (BARRA EXTERNA) ---
         if(comboCount > 0) {
             let progress = comboTimer / comboMaxTime;
             let cColor = getComboColor();
@@ -603,29 +587,20 @@
             ctx.lineWidth = 4;
             ctx.shadowBlur = 15;
             ctx.shadowColor = cColor;
-
-            // Define o tamanho da barra que "corre" pela borda
             let beam = 340 * progress;
             let margin = (340 - beam) / 2;
-
             ctx.beginPath();
-            // Topo
             ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2);
-            // Baixo
             ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
-            // Esquerda
             ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin);
-            // Direita
             ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
             ctx.stroke();
             ctx.restore();
-            
             canvas.style.borderColor = cColor;
         }
 
         if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
         
-        // Desenha Grid deslocado pelo gridOffset
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; 
             ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
@@ -633,8 +608,6 @@
         }
         
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
-
-        comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx.fillText(ct.text, ct.x, ct.y); ct.y -= 1; ct.alpha -= 0.02; if(ct.alpha <= 0) comboTexts.splice(i, 1); });
 
         ctx.globalAlpha = 1;
         if(dragPiece && moved) { 
