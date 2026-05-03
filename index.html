@@ -221,8 +221,8 @@
     let bestLevel = localStorage.getItem('neonGridlock_bestLevel') || 1;
     let bestScore = localStorage.getItem('neonGridlock_bestScore') || 0;
 
-    // Tempo de combo ajustado para 300 (mais rápido)
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 300, comboTexts = [], shakeIntensity = 0;
+    // COMBO AJUSTADO: 420 frames = exatamente 7 segundos
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 420, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
@@ -628,4 +628,3 @@
 </script>
 </body>
 </html>
-
