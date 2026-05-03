@@ -236,7 +236,15 @@
     document.getElementById('best-level').innerText = `FASE ${bestLevel}`;
     document.getElementById('best-score').innerText = bestScore;
 
-    // --- SISTEMA DE ÁUDIO CORRIGIDO ---
+    const imgAssets = {};
+    const assetFiles = { 
+        base: 'bloco.png', 
+        base_story: 'bloco_historia.png', 
+        "⭐": 'estrela.png', 
+        "🔥": 'fogo.png', 
+        "⚡": 'raio.png' 
+    };
+
     function playSound(type) {
         if (isMuted || !audioCtx || audioCtx.state === 'closed') return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -268,7 +276,6 @@
         }
     }
 
-    // Para o som quando o jogo é minimizado ou o usuário muda de aba
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
             bgMusic.pause();
@@ -282,15 +289,11 @@
     });
 
     function exitToHome() {
-        // Para tudo
         bgMusic.pause();
         bgMusic.currentTime = 0;
         if(audioCtx) audioCtx.close();
-        location.reload(); // Recarrega para limpar o estado
+        location.reload();
     }
-
-    const imgAssets = {};
-    const assetFiles = { base: 'bloco.png', "⭐": 'estrela.png', "🔥": 'fogo.png', "⚡": 'raio.png' };
 
     function loadAssets(callback) {
         let loaded = 0;
@@ -309,11 +312,17 @@
     }
 
     function drawBlock(context, type, x, y, w, h) {
-        let img = imgAssets[type] || (type === 1 ? imgAssets.base : null);
+        let img;
+        if (type === 1 || type === "base") {
+            img = (gameMode === 'story' && imgAssets.base_story) ? imgAssets.base_story : imgAssets.base;
+        } else {
+            img = imgAssets[type];
+        }
+
         if (img && img.complete && img.naturalWidth !== 0) {
             context.drawImage(img, x, y, w, h);
         } else {
-            const baseColor = comboCount > 0 ? getComboColor() : "#00ffff";
+            const baseColor = comboCount > 0 ? getComboColor() : (gameMode === 'story' ? "#ffd700" : "#00ffff");
             context.fillStyle = (type === 1 || type === "base") ? baseColor : ({"⭐": "#ffff00", "🔥": "#ff4400", "⚡": "#00ff00"}[type] || baseColor);
             const speed = 150 - Math.min(level * 15, 130);
             const pulse = Math.sin(Date.now() / speed) * 10;
@@ -372,7 +381,6 @@
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
         
-        // Inicializa áudio
         if(!audioCtx || audioCtx.state === 'closed') {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
