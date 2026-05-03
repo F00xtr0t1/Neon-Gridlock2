@@ -196,7 +196,7 @@
     <h2 style="color:#ff4444; font-size:32px; text-shadow: 0 0 15px rgba(255,0,0,0.5);">GAME OVER</h2>
     <p id="final-stats" style="color:#fff; text-align: center; line-height: 1.6;"></p>
     <button class="start-btn" onclick="restartGame()">TENTAR NOVAMENTE</button>
-    <button class="start-btn" onclick="location.reload()" style="font-size: 12px; border: none;">SAIR</button>
+    <button class="start-btn" onclick="exitToHome()" style="font-size: 12px; border: none;">SAIR</button>
 </div>
 
 <audio id="mainAudio" loop>
@@ -220,12 +220,7 @@
     let bestLevel = localStorage.getItem('neonGridlock_bestLevel') || 1;
     let bestScore = localStorage.getItem('neonGridlock_bestScore') || 0;
 
-    let comboCount = 0;
-    let comboTimer = 0;
-    const comboMaxTime = 600;
-    let comboTexts = [];
-    let shakeIntensity = 0;
-
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
@@ -241,8 +236,9 @@
     document.getElementById('best-level').innerText = `FASE ${bestLevel}`;
     document.getElementById('best-score').innerText = bestScore;
 
+    // --- SISTEMA DE ÁUDIO CORRIGIDO ---
     function playSound(type) {
-        if (isMuted || !audioCtx) return;
+        if (isMuted || !audioCtx || audioCtx.state === 'closed') return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -270,6 +266,27 @@
                 gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc.start(); osc.stop(now + 0.2); break;
         }
+    }
+
+    // Para o som quando o jogo é minimizado ou o usuário muda de aba
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            bgMusic.pause();
+            if(audioCtx) audioCtx.suspend();
+        } else {
+            if (!isMuted && document.getElementById('start-screen').style.display === 'none') {
+                bgMusic.play().catch(()=>{});
+                if(audioCtx) audioCtx.resume();
+            }
+        }
+    });
+
+    function exitToHome() {
+        // Para tudo
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        if(audioCtx) audioCtx.close();
+        location.reload(); // Recarrega para limpar o estado
     }
 
     const imgAssets = {};
@@ -315,6 +332,7 @@
         startCanvas.width = window.innerWidth;
         startCanvas.height = window.innerHeight;
         const types = ["base", "⭐", "🔥", "⚡"];
+        startBgBlocks = [];
         for(let i=0; i<12; i++) {
             startBgBlocks.push({
                 x: Math.random()*startCanvas.width, y: Math.random()*startCanvas.height,
@@ -353,12 +371,18 @@
         document.getElementById('ui-container').style.display = 'block';
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if(!isMuted) bgMusic.play().catch(()=>{});
+        
+        // Inicializa áudio
+        if(!audioCtx || audioCtx.state === 'closed') {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(!isMuted) {
+            bgMusic.currentTime = 0;
+            bgMusic.play().catch(()=>{});
+        }
 
         if(gameMode === 'record') {
-            level = 1;
-            score = 0;
+            level = 1; score = 0;
         } else {
             level = parseInt(localStorage.getItem('neonGridlock_storyLevel')) || 1;
             score = parseInt(localStorage.getItem('neonGridlock_storyScore')) || 0;
@@ -368,7 +392,17 @@
         requestAnimationFrame(loop);
     }
 
-    function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊"; isMuted ? bgMusic.pause() : bgMusic.play().catch(()=>{}); }
+    function toggleMute() { 
+        isMuted = !isMuted; 
+        document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊"; 
+        if(isMuted) {
+            bgMusic.pause();
+            if(audioCtx) audioCtx.suspend();
+        } else {
+            bgMusic.play().catch(()=>{});
+            if(audioCtx) audioCtx.resume();
+        }
+    }
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
