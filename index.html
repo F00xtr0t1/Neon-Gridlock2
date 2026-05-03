@@ -184,7 +184,7 @@
     <div id="mission-container"></div>
 </div>
 
-<canvas id="gameCanvas" width="320" height="320"></canvas>
+<canvas id="gameCanvas" width="340" height="340"></canvas>
 
 <div id="pieces-selector-ui" class="pieces-selector">
     <div id="slot0" class="slot"></div>
@@ -207,6 +207,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
+    const gridOffset = 10; // Margem para o efeito de luz
 
     const startCanvas = document.getElementById('start-bg-canvas');
     const sCtx = startCanvas.getContext('2d');
@@ -334,7 +335,7 @@
     }
 
     function spawnComboText(txt) {
-        comboTexts.push({ text: txt, x: 160, y: 160, alpha: 1, scale: 1, color: getComboColor() });
+        comboTexts.push({ text: txt, x: 170, y: 170, alpha: 1, scale: 1, color: getComboColor() });
     }
 
     function initStartScreenAnim() {
@@ -503,8 +504,8 @@
             if(comboCount >= 2) shakeIntensity = 10;
             const proc = (v) => { if(missions[v] && missions[v].current < missions[v].goal) missions[v].current++; };
             const cColor = getComboColor();
-            rf.forEach(r => { for(let c=0; c<8; c++) { proc(grid[r][c]); explode(c*size, r*size, cColor); grid[r][c]=0; } });
-            cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(c*size, r*size, cColor); grid[r][c]=0; } });
+            rf.forEach(r => { for(let c=0; c<8; c++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
+            cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
         }
 
@@ -568,8 +569,8 @@
         if(!moved && (Date.now() - lastTap < 250)) { pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse()); playSound('rotate'); }
         else if(moved) {
             const rct = canvas.getBoundingClientRect();
-            const col = Math.round((mX - rct.left - (dragPiece[0].length*size/2)) / size);
-            const row = Math.round((mY - DRAG_OFFSET_Y - rct.top - (dragPiece.length*size/2)) / size);
+            const col = Math.round((mX - rct.left - gridOffset - (dragPiece[0].length*size/2)) / size);
+            const row = Math.round((mY - DRAG_OFFSET_Y - rct.top - gridOffset - (dragPiece.length*size/2)) / size);
             if(canPlace(dragPiece, row, col)) {
                 dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) grid[row+i][col+j] = v; }));
                 pieces[dragIdx] = null; playSound('place'); checkLines();
@@ -581,19 +582,71 @@
     });
 
     function loop() {
-        if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
+        if(comboCount > 0) { 
+            comboTimer--; 
+            if(comboTimer <= 0) { 
+                comboCount = 0; 
+                canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; 
+                document.getElementById('score').style.color = "#00ffff"; 
+            } 
+        }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
         ctx.clearRect(-40,-40,400,400);
 
-        if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(0, 0, 320, 320); }
-        for(let r=0; r<8; r++) for(let c=0; c<8; c++) { ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(c*size, r*size, size-1, size-1); if(grid[r][c]) drawBlock(ctx, grid[r][c], c*size, r*size, size-1, size-1); }
+        // --- EFEITO DE LUZ COMBO (BARRA EXTERNA) ---
+        if(comboCount > 0) {
+            let progress = comboTimer / comboMaxTime;
+            let cColor = getComboColor();
+            ctx.save();
+            ctx.strokeStyle = cColor;
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = cColor;
+
+            // Define o tamanho da barra que "corre" pela borda
+            let beam = 340 * progress;
+            let margin = (340 - beam) / 2;
+
+            ctx.beginPath();
+            // Topo
+            ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2);
+            // Baixo
+            ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
+            // Esquerda
+            ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin);
+            // Direita
+            ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
+            ctx.stroke();
+            ctx.restore();
+            
+            canvas.style.borderColor = cColor;
+        }
+
+        if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
+        
+        // Desenha Grid deslocado pelo gridOffset
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
+            ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; 
+            ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
+            if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
+        }
+        
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
 
         comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx.fillText(ct.text, ct.x, ct.y); ct.y -= 1; ct.alpha -= 0.02; if(ct.alpha <= 0) comboTexts.splice(i, 1); });
 
         ctx.globalAlpha = 1;
-        if(dragPiece && moved) { const rct = canvas.getBoundingClientRect(); dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) { let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); drawBlock(ctx, v, dx, dy, size-1, size-1); } })); }
+        if(dragPiece && moved) { 
+            const rct = canvas.getBoundingClientRect(); 
+            dragPiece.forEach((rd, i) => rd.forEach((v, j) => { 
+                if(v) { 
+                    let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); 
+                    let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); 
+                    drawBlock(ctx, v, dx, dy, size-1, size-1); 
+                } 
+            })); 
+        }
         ctx.restore();
         requestAnimationFrame(loop);
     }
