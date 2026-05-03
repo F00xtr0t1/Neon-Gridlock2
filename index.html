@@ -245,6 +245,7 @@
         "⚡": 'raio.png' 
     };
 
+    // --- SISTEMA DE SOM ---
     function playSound(type) {
         if (isMuted || !audioCtx || audioCtx.state === 'closed') return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -311,6 +312,7 @@
         return `hsl(${hue}, 100%, 60%)`;
     }
 
+    // --- DESENHO DE BLOCOS CORRIGIDO (IMAGEM + COMBO) ---
     function drawBlock(context, type, x, y, w, h) {
         let img;
         if (type === 1 || type === "base") {
@@ -320,7 +322,19 @@
         }
 
         if (img && img.complete && img.naturalWidth !== 0) {
-            context.drawImage(img, x, y, w, h);
+            if (comboCount > 0) {
+                context.save();
+                context.shadowBlur = 15 + (comboCount * 2);
+                context.shadowColor = getComboColor();
+                context.drawImage(img, x, y, w, h);
+                context.globalCompositeOperation = "source-atop";
+                context.fillStyle = getComboColor();
+                context.globalAlpha = 0.3;
+                context.fillRect(x, y, w, h);
+                context.restore();
+            } else {
+                context.drawImage(img, x, y, w, h);
+            }
         } else {
             const baseColor = comboCount > 0 ? getComboColor() : (gameMode === 'story' ? "#ffd700" : "#00ffff");
             context.fillStyle = (type === 1 || type === "base") ? baseColor : ({"⭐": "#ffff00", "🔥": "#ff4400", "⚡": "#00ff00"}[type] || baseColor);
