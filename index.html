@@ -218,7 +218,7 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // SISTEMA DE RECORDES SEPARADO
+    // --- SISTEMA DE SALVAMENTO SEPARADO ---
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
     let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
@@ -277,15 +277,13 @@
     }
 
     function exitToHome() {
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
+        bgMusic.pause(); bgMusic.currentTime = 0;
         if(audioCtx) audioCtx.close();
         location.reload();
     }
 
     function loadAssets(callback) {
-        let loaded = 0;
-        const keys = Object.keys(assetFiles);
+        let loaded = 0; const keys = Object.keys(assetFiles);
         keys.forEach(key => {
             const img = new Image(); img.src = './assets/' + assetFiles[key];
             img.onload = () => { imgAssets[key] = img; if(++loaded === keys.length) callback(); };
@@ -300,16 +298,9 @@
     }
 
     function drawBlock(context, type, x, y, w, h) {
-        let img;
-        if (type === 1 || type === "base") {
-            img = (gameMode === 'story' && imgAssets.base_story) ? imgAssets.base_story : imgAssets.base;
-        } else {
-            img = imgAssets[type];
-        }
-
-        if (img && img.complete && img.naturalWidth !== 0) {
-            context.drawImage(img, x, y, w, h);
-        } else {
+        let img = (type === 1 || type === "base") ? ((gameMode === 'story' && imgAssets.base_story) ? imgAssets.base_story : imgAssets.base) : imgAssets[type];
+        if (img && img.complete && img.naturalWidth !== 0) { context.drawImage(img, x, y, w, h); } 
+        else {
             const baseColor = comboCount > 0 ? getComboColor() : (gameMode === 'story' ? "#ffd700" : "#00ffff");
             context.fillStyle = (type === 1 || type === "base") ? baseColor : ({"⭐": "#ffff00", "🔥": "#ff4400", "⚡": "#00ff00"}[type] || baseColor);
             const speed = 150 - Math.min(level * 15, 130);
@@ -322,10 +313,8 @@
     }
 
     function initStartScreenAnim() {
-        startCanvas.width = window.innerWidth;
-        startCanvas.height = window.innerHeight;
-        const types = ["base", "⭐", "🔥", "⚡"];
-        startBgBlocks = [];
+        startCanvas.width = window.innerWidth; startCanvas.height = window.innerHeight;
+        const types = ["base", "⭐", "🔥", "⚡"]; startBgBlocks = [];
         for(let i=0; i<12; i++) {
             startBgBlocks.push({
                 x: Math.random()*startCanvas.width, y: Math.random()*startCanvas.height,
@@ -341,13 +330,10 @@
         sCtx.clearRect(0,0,startCanvas.width, startCanvas.height);
         startBgBlocks.forEach(b => {
             b.x += b.speedX; b.y += b.speedY; b.angle += b.rotSpeed;
-            if(b.x > startCanvas.width+b.size) b.x = -b.size;
-            if(b.x < -b.size) b.x = startCanvas.width+b.size;
-            if(b.y > startCanvas.height+b.size) b.y = -b.size;
-            if(b.y < -b.size) b.y = startCanvas.height+b.size;
+            if(b.x > startCanvas.width+b.size) b.x = -b.size; if(b.x < -b.size) b.x = startCanvas.width+b.size;
+            if(b.y > startCanvas.height+b.size) b.y = -b.size; if(b.y < -b.size) b.y = startCanvas.height+b.size;
             sCtx.save(); sCtx.translate(b.x, b.y); sCtx.rotate(b.angle);
-            drawBlock(sCtx, b.type, -b.size/2, -b.size/2, b.size, b.size);
-            sCtx.restore();
+            drawBlock(sCtx, b.type, -b.size/2, -b.size/2, b.size, b.size); sCtx.restore();
         });
         startAnimationId = requestAnimationFrame(drawStartScreenAnim);
     }
@@ -358,20 +344,14 @@
     }
 
     function initGame(mode) {
-        gameMode = mode;
-        cancelAnimationFrame(startAnimationId);
+        gameMode = mode; cancelAnimationFrame(startAnimationId);
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('ui-container').style.display = 'block';
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('pieces-selector-ui').style.display = 'flex';
         
-        if(!audioCtx || audioCtx.state === 'closed') {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if(!isMuted) {
-            bgMusic.currentTime = 0;
-            bgMusic.play().catch(()=>{});
-        }
+        if(!audioCtx || audioCtx.state === 'closed') { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        if(!isMuted) { bgMusic.currentTime = 0; bgMusic.play().catch(()=>{}); }
 
         if(gameMode === 'record') {
             level = 1; score = 0;
@@ -385,27 +365,17 @@
             document.getElementById('best-score').innerText = recordStoryMaxLevel;
             document.getElementById('best-level').innerText = "STORY";
         }
-
-        setupLevel();
-        requestAnimationFrame(loop);
+        setupLevel(); requestAnimationFrame(loop);
     }
 
     function toggleMute() { 
-        isMuted = !isMuted; 
-        document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊"; 
-        if(isMuted) {
-            bgMusic.pause();
-            if(audioCtx) audioCtx.suspend();
-        } else {
-            bgMusic.play().catch(()=>{});
-            if(audioCtx) audioCtx.resume();
-        }
+        isMuted = !isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊"; 
+        if(isMuted) { bgMusic.pause(); if(audioCtx) audioCtx.suspend(); } 
+        else { bgMusic.play().catch(()=>{}); if(audioCtx) audioCtx.resume(); }
     }
 
     function setupLevel() {
-        grid = Array(8).fill().map(() => Array(8).fill(0));
-        missions = {};
-        
+        grid = Array(8).fill().map(() => Array(8).fill(0)); missions = {};
         if(gameMode === 'story') {
             localStorage.setItem('neonGridlock_story_current_level', level);
             localStorage.setItem('neonGridlock_story_current_score', score);
@@ -415,22 +385,16 @@
                 document.getElementById('best-score').innerText = recordStoryMaxLevel;
             }
         }
-
-        const types = ["⭐", "🔥", "⚡"];
-        const goal = 5 + (level * 2);
-        const hues = [190, 280, 210, 140, 40, 0, 320];
-        const currentHue = hues[(level - 1) % hues.length];
+        const types = ["⭐", "🔥", "⚡"]; const goal = 5 + (level * 2);
+        const hues = [190, 280, 210, 140, 40, 0, 320]; const currentHue = hues[(level - 1) % hues.length];
         document.body.style.background = `radial-gradient(circle at center, hsl(${currentHue}, 60%, 8%) 0%, #01080d 100%)`;
-        
         if (level < 5) missions[types[(level-1)%3]] = { current: 0, goal: goal };
         else {
             let num = level >= 8 ? 3 : 2;
             for(let i=0; i<num; i++) missions[types[i]] = { current: 0, goal: goal };
         }
-        
         document.getElementById('level-txt').innerText = `FASE ${level}`;
-        inTransition = false;
-        newSet();
+        inTransition = false; newSet();
     }
 
     function newSet() {
@@ -445,7 +409,8 @@
             pieces[i] = p;
         }
         updateUI();
-        checkGameOver();
+        // Atraso para garantir que as peças apareçam antes do Game Over se não houver espaço
+        setTimeout(checkGameOver, 100);
     }
 
     function canFitAnywhere(p) {
@@ -461,34 +426,24 @@
     function updateUI() {
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
-        
-        if(gameMode === 'record') {
-            if(score > recordInfiniteScore) { 
-                recordInfiniteScore = score;
-                recordInfiniteLevel = level;
-                localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore); 
-                localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel); 
-                document.getElementById('best-score').innerText = recordInfiniteScore; 
-                document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
-            }
+        if(gameMode === 'record' && score > recordInfiniteScore) {
+            recordInfiniteScore = score; recordInfiniteLevel = level;
+            localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore);
+            localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel);
+            document.getElementById('best-score').innerText = recordInfiniteScore;
+            document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
         }
-
-        const container = document.getElementById('mission-container');
-        container.innerHTML = '';
+        const container = document.getElementById('mission-container'); container.innerHTML = '';
         Object.keys(missions).forEach(t => {
-            const m = missions[t];
-            const div = document.createElement('div');
+            const m = missions[t]; const div = document.createElement('div');
             div.className = `mission-item ${m.current >= m.goal ? 'done' : ''}`;
-            div.innerHTML = `${t} <span>${m.current}/${m.goal}</span>`;
-            container.appendChild(div);
+            div.innerHTML = `${t} <span>${m.current}/${m.goal}</span>`; container.appendChild(div);
         });
         for(let i=0; i<3; i++) {
-            const slot = document.getElementById('slot'+i); slot.innerHTML = '';
-            slot.classList.remove('disabled');
+            const slot = document.getElementById('slot'+i); slot.innerHTML = ''; slot.classList.remove('disabled');
             if(!pieces[i]) continue;
             if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled');
-            const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
-            const cx = cv.getContext('2d');
+            const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80; const cx = cv.getContext('2d');
             const p = pieces[i], bSize = 18;
             const ox = (80 - p[0].length*bSize)/2, oy = (80 - p.length*bSize)/2;
             p.forEach((row, r) => row.forEach((v, c) => { if(v) drawBlock(cx, v, ox+c*bSize, oy+r*bSize, bSize-1, bSize-1); }));
@@ -501,26 +456,19 @@
         for(let r=0; r<8; r++) if(grid[r].every(v => v !== 0)) rf.push(r);
         for(let c=0; c<8; c++) { let full = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) full = false; if(full) cf.push(c); }
         if(rf.length || cf.length) {
-            comboCount++; comboTimer = comboMaxTime;
-            if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-            playSound('break');
-            if(comboCount >= 2) shakeIntensity = 10;
+            comboCount++; comboTimer = comboMaxTime; if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+            playSound('break'); if(comboCount >= 2) shakeIntensity = 10;
             const proc = (v) => { if(missions[v] && missions[v].current < missions[v].goal) missions[v].current++; };
             const cColor = getComboColor();
             rf.forEach(r => { for(let c=0; c<8; c++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
         }
-
         if(Object.values(missions).every(m => m.current >= m.goal)) {
-            inTransition = true;
-            const trans = document.getElementById('level-transition');
+            inTransition = true; const trans = document.getElementById('level-transition');
             document.getElementById('transition-text').innerText = `FASE ${level} CONCLUÍDA!`;
             trans.classList.add('show');
-            setTimeout(() => {
-                trans.classList.remove('show');
-                level++; setupLevel();
-            }, 1800);
+            setTimeout(() => { trans.classList.remove('show'); level++; setupLevel(); }, 1800);
         }
         updateUI();
     }
@@ -539,23 +487,16 @@
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
         if (!ok && pieces.some(p => p !== null)) { 
-            isGameOver = true; 
-            document.getElementById('game-over').style.display = 'flex'; 
-            
-            let infoTexto = "";
-            if(gameMode === 'record') {
-                infoTexto = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore} (Fase ${recordInfiniteLevel})</span>`;
-            } else {
-                infoTexto = `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
-            }
-            
-            document.getElementById('final-stats').innerHTML = infoTexto; 
+            isGameOver = true; document.getElementById('game-over').style.display = 'flex'; 
+            let info = gameMode === 'record' ? 
+                `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore} (Fase ${recordInfiniteLevel})</span>` :
+                `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
+            document.getElementById('final-stats').innerHTML = info; 
         }
     }
 
     function restartGame() {
-        isGameOver = false;
-        document.getElementById('game-over').style.display = 'none';
+        isGameOver = false; document.getElementById('game-over').style.display = 'none';
         if(gameMode === 'record') { level = 1; score = 0; }
         setupLevel();
     }
@@ -586,56 +527,42 @@
                 if(pieces.every(p => p === null)) newSet(); else checkGameOver();
             } else { playSound('error'); }
         }
-        document.getElementById('slot'+dragIdx).style.opacity = "1";
+        if(dragIdx !== -1) document.getElementById('slot'+dragIdx).style.opacity = "1";
         dragIdx = -1; dragPiece = null; updateUI();
     });
 
     function loop() {
-        if(comboCount > 0) { 
-            comboTimer--; 
-            if(comboTimer <= 0) { 
-                comboCount = 0; 
-                canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; 
-                document.getElementById('score').style.color = "#00ffff"; 
-            } 
-        }
+        if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
         ctx.save();
-        if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
+        if(shakeIntensity > 0) { ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
         ctx.clearRect(-40,-40,420,420);
-
         if(comboCount > 0) {
-            let progress = comboTimer / comboMaxTime;
-            let cColor = getComboColor();
+            let progress = comboTimer / comboMaxTime; let cColor = getComboColor();
             ctx.save(); ctx.strokeStyle = cColor; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = cColor;
             let beam = 340 * progress; let margin = (340 - beam) / 2;
             ctx.beginPath(); ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2); ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
             ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin); ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
             ctx.stroke(); ctx.restore(); canvas.style.borderColor = cColor;
         }
-
-        if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
+        if(comboCount >= 4) { ctx.fillStyle = `hsla(${(Date.now()/10)%360}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
         }
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
-
         ctx.globalAlpha = 1;
         if(dragPiece && moved) { 
             const rct = canvas.getBoundingClientRect(); 
-            dragPiece.forEach((rd, i) => rd.forEach((v, j) => { 
-                if(v) { 
-                    let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); 
-                    let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); 
-                    drawBlock(ctx, v, dx, dy, size-1, size-1); 
-                } 
-            })); 
+            dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) { 
+                let dx = (mX - rct.left) + (j*size) - (dragPiece[0].length*size/2); 
+                let dy = (mY - DRAG_OFFSET_Y - rct.top) + (i*size) - (dragPiece.length*size/2); 
+                drawBlock(ctx, v, dx, dy, size-1, size-1); 
+            }})); 
         }
-        ctx.restore();
-        requestAnimationFrame(loop);
+        ctx.restore(); requestAnimationFrame(loop);
     }
-
     window.onload = () => { loadAssets(() => { document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').innerText = "JOGAR"; initStartScreenAnim(); }); };
 </script>
 </body>
 </html>
+
