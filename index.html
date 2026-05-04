@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Gridlock - Full Version</title>
+    <title>Neon Gridlock - Full Master Edition</title>
     <style>
         :root {
             --cyan-neon: #00ffff;
@@ -121,11 +121,18 @@
             background: rgba(255,255,255,0.03);
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
         }
 
-       .slot.disabled {
-            opacity: 0.15;
-            filter: grayscale(1) brightness(0.3);
+       .slot.warning {
+            border-color: #ff4444 !important;
+            box-shadow: 0 0 15px rgba(255,0,0,0.3);
+            animation: pulse-red 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-red {
+            from { background: rgba(255,0,0,0.05); }
+            to { background: rgba(255,0,0,0.2); }
         }
 
         #game-over {
@@ -217,19 +224,21 @@
     let audioCtx, bgMusic = document.getElementById('mainAudio'), isMuted = false, particles = [];
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
+    
+    // VARIÁVEIS DE CONTROLE DO GAME OVER E DELAY
+    let gameOverTimeout = null;
+    let isGameOverPending = false;
 
-    // SISTEMA DE SALVAMENTO SEPARADO
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
     let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
 
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
     const DRAG_OFFSET_Y = 60;
 
-    // FORMAS DAS PEÇAS - INCLUINDO AS COMPLEXAS PARA FASES AVANÇADAS
     const basicShapes = [
         [[1,1],[1,1]], [[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1,0],[0,1,1]], [[1,0,0],[1,1,1]], [[1]], [[1,1]], [[1,1,1]]
     ];
@@ -377,6 +386,7 @@
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0)); missions = {};
+        cancelGameOverTimer();
         if(gameMode === 'story') {
             localStorage.setItem('neonGridlock_story_current_level', level);
             localStorage.setItem('neonGridlock_story_current_score', score);
@@ -410,12 +420,11 @@
             pieces[i] = p;
         }
         updateUI();
-        // GARENTIR QUE O JOGADOR VEJA AS PEÇAS ANTES DO GAME OVER
-        setTimeout(() => { checkGameOver(); }, 100);
+        checkGameOverStatus();
     }
 
     function canFitAnywhere(p) {
-        if (!p) return true;
+        if (!p) return false;
         let tempP = JSON.parse(JSON.stringify(p));
         for (let rot = 0; rot < 4; rot++) {
             for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (canPlace(tempP, r, c)) return true;
@@ -427,23 +436,18 @@
     function updateUI() {
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
-        if(gameMode === 'record' && score > recordInfiniteScore) {
-            recordInfiniteScore = score; recordInfiniteLevel = level;
-            localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore);
-            localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel);
-            document.getElementById('best-score').innerText = recordInfiniteScore;
-            document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
-        }
+        
         const container = document.getElementById('mission-container'); container.innerHTML = '';
         Object.keys(missions).forEach(t => {
             const m = missions[t]; const div = document.createElement('div');
             div.className = `mission-item ${m.current >= m.goal ? 'done' : ''}`;
             div.innerHTML = `${t} <span>${m.current}/${m.goal}</span>`; container.appendChild(div);
         });
+
         for(let i=0; i<3; i++) {
-            const slot = document.getElementById('slot'+i); slot.innerHTML = ''; slot.classList.remove('disabled');
+            const slot = document.getElementById('slot'+i); slot.innerHTML = '';
             if(!pieces[i]) continue;
-            if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled');
+            if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled'); else slot.classList.remove('disabled');
             const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80; const cx = cv.getContext('2d');
             const p = pieces[i], bSize = 18;
             const ox = (80 - p[0].length*bSize)/2, oy = (80 - p.length*bSize)/2;
@@ -456,7 +460,9 @@
         let rf = [], cf = [];
         for(let r=0; r<8; r++) if(grid[r].every(v => v !== 0)) rf.push(r);
         for(let c=0; c<8; c++) { let full = true; for(let r=0; r<8; r++) if(grid[r][c] === 0) full = false; if(full) cf.push(c); }
+        
         if(rf.length || cf.length) {
+            cancelGameOverTimer(); // SE ESTOUROU LINHA, CANCELA A CONTAGEM REGRESSIVA
             comboCount++; comboTimer = comboMaxTime; if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
             playSound('break'); if(comboCount >= 2) shakeIntensity = 10;
             const proc = (v) => { if(missions[v] && missions[v].current < missions[v].goal) missions[v].current++; };
@@ -465,6 +471,7 @@
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
         }
+
         if(Object.values(missions).every(m => m.current >= m.goal)) {
             inTransition = true; const trans = document.getElementById('level-transition');
             document.getElementById('transition-text').innerText = `FASE ${level} CONCLUÍDA!`;
@@ -484,20 +491,44 @@
         return true;
     }
 
-    function checkGameOver() {
-        let ok = false;
-        for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        if (!ok && pieces.some(p => p !== null)) { 
-            isGameOver = true; document.getElementById('game-over').style.display = 'flex'; 
-            let info = gameMode === 'record' ? 
-                `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore} (Fase ${recordInfiniteLevel})</span>` :
-                `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
-            document.getElementById('final-stats').innerHTML = info; 
+    // LOGICA DE DELAY DE 5 SEGUNDOS NO GAME OVER
+    function checkGameOverStatus() {
+        let hasMove = false;
+        for (let p of pieces) if (p && canFitAnywhere(p)) hasMove = true;
+
+        if (!hasMove && pieces.some(p => p !== null)) {
+            if (!isGameOverPending) startGameOverTimer();
+        } else {
+            cancelGameOverTimer();
         }
     }
 
+    function startGameOverTimer() {
+        isGameOverPending = true;
+        for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.add('warning');
+        
+        gameOverTimeout = setTimeout(() => {
+            isGameOver = true;
+            document.getElementById('game-over').style.display = 'flex';
+            let info = gameMode === 'record' ? 
+                `PONTOS: ${score}<br>FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore}</span>` :
+                `FASE ALCANÇADA: ${level}<br>PONTOS: ${score}`;
+            document.getElementById('final-stats').innerHTML = info;
+        }, 5000); // 5 SEGUNDOS OBRIGATÓRIOS
+    }
+
+    function cancelGameOverTimer() {
+        if (gameOverTimeout) {
+            clearTimeout(gameOverTimeout);
+            gameOverTimeout = null;
+        }
+        isGameOverPending = false;
+        for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('warning');
+    }
+
     function restartGame() {
-        isGameOver = false; document.getElementById('game-over').style.display = 'none';
+        isGameOver = false;
+        document.getElementById('game-over').style.display = 'none';
         if(gameMode === 'record') { level = 1; score = 0; }
         setupLevel();
     }
@@ -513,11 +544,18 @@
         }
     });
 
-    window.addEventListener('touchmove', e => { if(dragIdx === -1 || inTransition) return; moved = true; mX = e.touches[0].clientX; mY = e.touches[0].clientY; document.getElementById('slot'+dragIdx).style.opacity = "0.2"; });
+    window.addEventListener('touchmove', e => { 
+        if(dragIdx === -1 || inTransition) return; 
+        moved = true; mX = e.touches[0].clientX; mY = e.touches[0].clientY; 
+        document.getElementById('slot'+dragIdx).style.opacity = "0.2"; 
+    });
 
     window.addEventListener('touchend', () => {
         if(dragIdx === -1 || inTransition) return;
-        if(!moved && (Date.now() - lastTap < 250)) { pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse()); playSound('rotate'); }
+        if(!moved && (Date.now() - lastTap < 250)) { 
+            pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse()); 
+            playSound('rotate'); 
+        }
         else if(moved) {
             const rct = canvas.getBoundingClientRect();
             const col = Math.round((mX - rct.left - gridOffset - (dragPiece[0].length*size/2)) / size);
@@ -525,7 +563,7 @@
             if(canPlace(dragPiece, row, col)) {
                 dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) grid[row+i][col+j] = v; }));
                 pieces[dragIdx] = null; playSound('place'); checkLines();
-                if(pieces.every(p => p === null)) newSet(); else checkGameOver();
+                if(pieces.every(p => p === null)) newSet(); else checkGameOverStatus();
             } else { playSound('error'); }
         }
         if(dragIdx !== -1) document.getElementById('slot'+dragIdx).style.opacity = "1";
@@ -533,25 +571,39 @@
     });
 
     function loop() {
-        if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } }
+        if(comboCount > 0) { 
+            comboTimer--; 
+            if(comboTimer <= 0) { 
+                comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; 
+            } 
+        }
         ctx.save();
-        if(shakeIntensity > 0) { ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
+        if(shakeIntensity > 0) { ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeIntensity *= 0.9; }
         ctx.clearRect(-40,-40,420,420);
+        
+        // BORDA DE COMBO
         if(comboCount > 0) {
             let progress = comboTimer / comboMaxTime; let cColor = getComboColor();
-            ctx.save(); ctx.strokeStyle = cColor; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = cColor;
-            let beam = 340 * progress; let margin = (340 - beam) / 2;
-            ctx.beginPath(); ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2); ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
-            ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin); ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
-            ctx.stroke(); ctx.restore(); canvas.style.borderColor = cColor;
+            ctx.strokeStyle = cColor; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = cColor;
+            let beam = 340 * progress;
+            ctx.strokeRect(170 - beam/2, 2, beam, 336);
         }
-        if(comboCount >= 4) { ctx.fillStyle = `hsla(${(Date.now()/10)%360}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
+
+        // GRID BASE
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
         }
-        for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
+
+        // PARTÍCULAS
+        for (let i = particles.length - 1; i >= 0; i--) { 
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; 
+            ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; 
+            ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); 
+        }
         ctx.globalAlpha = 1;
+
+        // PEÇA SENDO ARRASTADA
         if(dragPiece && moved) { 
             const rct = canvas.getBoundingClientRect(); 
             dragPiece.forEach((rd, i) => rd.forEach((v, j) => { if(v) { 
