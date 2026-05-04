@@ -130,19 +130,19 @@
 
         /* --- ESTILO PARA O DELAY DE MORTE --- */
         .slot.warning {
-            background: rgba(255, 0, 0, 0.4) !important;
+            background: rgba(255, 0, 0, 0.5) !important;
             border: 2px solid #ff0000 !important;
-            animation: pulse-red 0.5s infinite alternate;
+            animation: pulse-red 0.4s infinite alternate;
         }
 
         @keyframes pulse-red {
             from { box-shadow: 0 0 5px #ff0000; }
-            to { box-shadow: 0 0 20px #ff0000; }
+            to { box-shadow: 0 0 25px #ff0000; }
         }
 
         #game-over {
             position: fixed; inset: 0; background: rgba(2, 17, 26, 0.98);
-            z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center;
         }
 
         #level-transition {
@@ -502,7 +502,7 @@
         for(let i=0; i<3; i++) {
             const slot = document.getElementById('slot'+i); slot.innerHTML = '';
             slot.classList.remove('disabled');
-            slot.classList.remove('warning'); // Limpa o aviso
+            slot.classList.remove('warning'); 
             if(!pieces[i]) continue;
             if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled');
             const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
@@ -553,45 +553,40 @@
         return true;
     }
 
-    // --- NOVA LÓGICA DE DERROTA COM DELAY ---
     function checkGameOver() {
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        
-        if (!ok && pieces.some(p => p !== null)) { 
-            triggerDeathSequence();
-        }
+        if (!ok && pieces.some(p => p !== null)) triggerDeathSequence();
     }
 
     function triggerDeathSequence() {
         if(isPendingDeath) return;
         isPendingDeath = true;
 
-        // Pinta de vermelho os slots que causaram a derrota
+        // Slot vermelho imediato
         for(let i=0; i<3; i++) {
             if(pieces[i] && !canFitAnywhere(pieces[i])) {
                 document.getElementById('slot'+i).classList.add('warning');
             }
         }
 
-        // Aguarda 5 segundos antes de mostrar a tela
+        // Delay de 3 segundos
         deathTimer = setTimeout(() => {
             isGameOver = true; 
             document.getElementById('game-over').style.display = 'flex'; 
             
             let infoTexto = "";
             if(gameMode === 'record') {
-                infoTexto = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore}</span>`;
+                infoTexto = `PONTOS: ${score}<br>FASE: ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore}</span>`;
             } else {
-                infoTexto = `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
+                infoTexto = `PONTOS: ${score}<br>FASE: ${level}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
             }
             document.getElementById('final-stats').innerHTML = infoTexto; 
-        }, 5000);
+        }, 3000);
     }
 
     function restartGame() {
-        isGameOver = false;
-        isPendingDeath = false;
+        isGameOver = false; isPendingDeath = false;
         if(deathTimer) clearTimeout(deathTimer);
         document.getElementById('game-over').style.display = 'none';
         if(gameMode === 'record') { level = 1; score = 0; }
@@ -599,7 +594,6 @@
     }
 
     window.addEventListener('touchstart', e => {
-        // Bloqueia toque se já perdeu ou está no delay de morte
         if(isGameOver || inTransition || isPendingDeath) return;
         const t = e.touches[0]; moved = false; lastTap = Date.now();
         for(let i=0; i<3; i++) {
@@ -625,18 +619,14 @@
                 if(pieces.every(p => p === null)) newSet(); else checkGameOver();
             } else { playSound('error'); }
         }
-        document.getElementById('slot'+dragIdx).style.opacity = "1";
+        if(dragIdx !== -1) document.getElementById('slot'+dragIdx).style.opacity = "1";
         dragIdx = -1; dragPiece = null; updateUI();
     });
 
     function loop() {
         if(comboCount > 0) { 
             comboTimer--; 
-            if(comboTimer <= 0) { 
-                comboCount = 0; 
-                canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; 
-                document.getElementById('score').style.color = "#00ffff"; 
-            } 
+            if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } 
         }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
@@ -652,7 +642,6 @@
             ctx.stroke(); ctx.restore(); canvas.style.borderColor = cColor;
         }
 
-        if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
@@ -678,3 +667,4 @@
 </script>
 </body>
 </html>
+
