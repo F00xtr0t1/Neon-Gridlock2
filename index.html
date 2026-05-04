@@ -207,7 +207,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
-    const gridOffset = 10; 
+    const gridOffset = 10;
 
     const startCanvas = document.getElementById('start-bg-canvas');
     const sCtx = startCanvas.getContext('2d');
@@ -218,12 +218,12 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // SISTEMA DE RECORDES PERSISTENTES
-    let recordInfinite = parseInt(localStorage.getItem('neonGridlock_recordInfinite')) || 0;
-    let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_recordInfiniteLevel')) || 1;
-    let recordStoryLevel = parseInt(localStorage.getItem('neonGridlock_bestLevel')) || 1;
+    // SISTEMA DE RECORDES SEPARADO
+    let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
+    let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
+    let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
 
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 420, comboTexts = [], shakeIntensity = 0;
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
@@ -376,18 +376,14 @@
         if(gameMode === 'record') {
             level = 1; score = 0;
             document.getElementById('label-record').innerText = "RECORDE";
-            document.getElementById('best-score').innerText = recordInfinite;
-            document.getElementById('best-level').style.display = "block";
+            document.getElementById('best-score').innerText = recordInfiniteScore;
             document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
-            document.getElementById('best-level').style.color = "rgba(0, 255, 255, 0.5)";
         } else {
-            level = parseInt(localStorage.getItem('neonGridlock_storyLevel')) || 1;
-            score = parseInt(localStorage.getItem('neonGridlock_storyScore')) || 0;
+            level = parseInt(localStorage.getItem('neonGridlock_story_current_level')) || 1;
+            score = parseInt(localStorage.getItem('neonGridlock_story_current_score')) || 0;
             document.getElementById('label-record').innerText = "MELHOR FASE";
-            document.getElementById('best-score').innerText = recordStoryLevel;
-            document.getElementById('best-level').style.display = "block";
+            document.getElementById('best-score').innerText = recordStoryMaxLevel;
             document.getElementById('best-level').innerText = "STORY";
-            document.getElementById('best-level').style.color = "#ffd700";
         }
 
         setupLevel();
@@ -411,12 +407,12 @@
         missions = {};
         
         if(gameMode === 'story') {
-            localStorage.setItem('neonGridlock_storyLevel', level);
-            localStorage.setItem('neonGridlock_storyScore', score);
-            if(level > recordStoryLevel) {
-                recordStoryLevel = level;
-                localStorage.setItem('neonGridlock_bestLevel', recordStoryLevel);
-                document.getElementById('best-score').innerText = recordStoryLevel;
+            localStorage.setItem('neonGridlock_story_current_level', level);
+            localStorage.setItem('neonGridlock_story_current_score', score);
+            if(level > recordStoryMaxLevel) {
+                recordStoryMaxLevel = level;
+                localStorage.setItem('neonGridlock_story_max_level', recordStoryMaxLevel);
+                document.getElementById('best-score').innerText = recordStoryMaxLevel;
             }
         }
 
@@ -467,12 +463,12 @@
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
         
         if(gameMode === 'record') {
-            if(score > recordInfinite) { 
-                recordInfinite = score;
+            if(score > recordInfiniteScore) { 
+                recordInfiniteScore = score;
                 recordInfiniteLevel = level;
-                localStorage.setItem('neonGridlock_recordInfinite', recordInfinite); 
-                localStorage.setItem('neonGridlock_recordInfiniteLevel', recordInfiniteLevel); 
-                document.getElementById('best-score').innerText = recordInfinite; 
+                localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore); 
+                localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel); 
+                document.getElementById('best-score').innerText = recordInfiniteScore; 
                 document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
             }
         }
@@ -545,8 +541,15 @@
         if (!ok && pieces.some(p => p !== null)) { 
             isGameOver = true; 
             document.getElementById('game-over').style.display = 'flex'; 
-            let recTxt = gameMode === 'record' ? `RECORDE: ${recordInfinite} (Fase ${recordInfiniteLevel})` : `MELHOR FASE: ${recordStoryLevel}`;
-            document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">${recTxt}</span>`; 
+            
+            let infoTexto = "";
+            if(gameMode === 'record') {
+                infoTexto = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore} (Fase ${recordInfiniteLevel})</span>`;
+            } else {
+                infoTexto = `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
+            }
+            
+            document.getElementById('final-stats').innerHTML = infoTexto; 
         }
     }
 
