@@ -218,8 +218,9 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // SISTEMA DE RECORDES SEPARADOS
+    // SISTEMA DE RECORDES PERSISTENTES
     let recordInfinite = parseInt(localStorage.getItem('neonGridlock_recordInfinite')) || 0;
+    let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_recordInfiniteLevel')) || 1;
     let recordStoryLevel = parseInt(localStorage.getItem('neonGridlock_bestLevel')) || 1;
 
     let comboCount = 0, comboTimer = 0, comboMaxTime = 420, comboTexts = [], shakeIntensity = 0;
@@ -376,7 +377,9 @@
             level = 1; score = 0;
             document.getElementById('label-record').innerText = "RECORDE";
             document.getElementById('best-score').innerText = recordInfinite;
-            document.getElementById('best-level').style.display = "none";
+            document.getElementById('best-level').style.display = "block";
+            document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
+            document.getElementById('best-level').style.color = "rgba(0, 255, 255, 0.5)";
         } else {
             level = parseInt(localStorage.getItem('neonGridlock_storyLevel')) || 1;
             score = parseInt(localStorage.getItem('neonGridlock_storyScore')) || 0;
@@ -384,6 +387,7 @@
             document.getElementById('best-score').innerText = recordStoryLevel;
             document.getElementById('best-level').style.display = "block";
             document.getElementById('best-level').innerText = "STORY";
+            document.getElementById('best-level').style.color = "#ffd700";
         }
 
         setupLevel();
@@ -409,8 +413,6 @@
         if(gameMode === 'story') {
             localStorage.setItem('neonGridlock_storyLevel', level);
             localStorage.setItem('neonGridlock_storyScore', score);
-            
-            // Atualiza recorde de fase se necessário
             if(level > recordStoryLevel) {
                 recordStoryLevel = level;
                 localStorage.setItem('neonGridlock_bestLevel', recordStoryLevel);
@@ -431,7 +433,6 @@
         }
         
         document.getElementById('level-txt').innerText = `FASE ${level}`;
-
         inTransition = false;
         newSet();
     }
@@ -465,12 +466,14 @@
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
         
-        // SISTEMA DE ATUALIZAÇÃO DE RECORDES EM TEMPO REAL
         if(gameMode === 'record') {
             if(score > recordInfinite) { 
-                recordInfinite = score; 
+                recordInfinite = score;
+                recordInfiniteLevel = level;
                 localStorage.setItem('neonGridlock_recordInfinite', recordInfinite); 
+                localStorage.setItem('neonGridlock_recordInfiniteLevel', recordInfiniteLevel); 
                 document.getElementById('best-score').innerText = recordInfinite; 
+                document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
             }
         }
 
@@ -542,19 +545,15 @@
         if (!ok && pieces.some(p => p !== null)) { 
             isGameOver = true; 
             document.getElementById('game-over').style.display = 'flex'; 
-            
-            // Exibição personalizada no Game Over
-            let recTxt = gameMode === 'record' ? `RECORDE ATUAL: ${recordInfinite}` : `MELHOR FASE: ${recordStoryLevel}`;
-            document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><br><span style="color:#ffd700">${recTxt}</span>`; 
+            let recTxt = gameMode === 'record' ? `RECORDE: ${recordInfinite} (Fase ${recordInfiniteLevel})` : `MELHOR FASE: ${recordStoryLevel}`;
+            document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">${recTxt}</span>`; 
         }
     }
 
     function restartGame() {
         isGameOver = false;
         document.getElementById('game-over').style.display = 'none';
-        if(gameMode === 'record') {
-            level = 1; score = 0;
-        }
+        if(gameMode === 'record') { level = 1; score = 0; }
         setupLevel();
     }
 
@@ -604,31 +603,18 @@
         if(comboCount > 0) {
             let progress = comboTimer / comboMaxTime;
             let cColor = getComboColor();
-            ctx.save();
-            ctx.strokeStyle = cColor;
-            ctx.lineWidth = 4;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = cColor;
-            let beam = 340 * progress;
-            let margin = (340 - beam) / 2;
-            ctx.beginPath();
-            ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2);
-            ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
-            ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin);
-            ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
-            ctx.stroke();
-            ctx.restore();
-            canvas.style.borderColor = cColor;
+            ctx.save(); ctx.strokeStyle = cColor; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = cColor;
+            let beam = 340 * progress; let margin = (340 - beam) / 2;
+            ctx.beginPath(); ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2); ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
+            ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin); ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
+            ctx.stroke(); ctx.restore(); canvas.style.borderColor = cColor;
         }
 
         if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
-        
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
-            ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; 
-            ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
+            ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
         }
-        
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
 
         ctx.globalAlpha = 1;
@@ -650,4 +636,3 @@
 </script>
 </body>
 </html>
-
