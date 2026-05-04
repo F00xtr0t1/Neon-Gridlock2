@@ -176,7 +176,7 @@
             <div id="score" class="stat-val">0</div>
         </div>
         <div class="stat-group" style="text-align: right;">
-            <span class="stat-label">RECORDE</span>
+            <span id="label-record" class="stat-label">RECORDE</span>
             <div id="best-score" class="stat-val" style="color:#ffd700">0</div>
             <div id="best-level" class="stat-sub">FASE 1</div>
         </div>
@@ -207,7 +207,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const size = 40;
-    const gridOffset = 10; // Margem para o efeito de luz
+    const gridOffset = 10; 
 
     const startCanvas = document.getElementById('start-bg-canvas');
     const sCtx = startCanvas.getContext('2d');
@@ -218,10 +218,11 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    let bestLevel = localStorage.getItem('neonGridlock_bestLevel') || 1;
-    let bestScore = localStorage.getItem('neonGridlock_bestScore') || 0;
+    // SISTEMA DE RECORDES SEPARADOS
+    let recordInfinite = parseInt(localStorage.getItem('neonGridlock_recordInfinite')) || 0;
+    let recordStoryLevel = parseInt(localStorage.getItem('neonGridlock_bestLevel')) || 1;
 
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 420, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
@@ -233,9 +234,6 @@
     const advancedShapes = [
         [[1,1,1],[1,0,0],[1,0,0]], [[1,0],[1,1],[0,1]], [[1,1,1],[1,1,1],[1,1,1]]
     ];
-
-    document.getElementById('best-level').innerText = `FASE ${bestLevel}`;
-    document.getElementById('best-score').innerText = bestScore;
 
     const imgAssets = {};
     const assetFiles = { 
@@ -276,18 +274,6 @@
                 osc.start(); osc.stop(now + 0.2); break;
         }
     }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            bgMusic.pause();
-            if(audioCtx) audioCtx.suspend();
-        } else {
-            if (!isMuted && document.getElementById('start-screen').style.display === 'none') {
-                bgMusic.play().catch(()=>{});
-                if(audioCtx) audioCtx.resume();
-            }
-        }
-    });
 
     function exitToHome() {
         bgMusic.pause();
@@ -332,10 +318,6 @@
             context.fillRect(x + 2, y + 2, w - 4, h - 4);
             context.shadowBlur = 0;
         }
-    }
-
-    function spawnComboText(txt) {
-        comboTexts.push({ text: txt, x: 170, y: 170, alpha: 1, scale: 1, color: getComboColor() });
     }
 
     function initStartScreenAnim() {
@@ -392,9 +374,16 @@
 
         if(gameMode === 'record') {
             level = 1; score = 0;
+            document.getElementById('label-record').innerText = "RECORDE";
+            document.getElementById('best-score').innerText = recordInfinite;
+            document.getElementById('best-level').style.display = "none";
         } else {
             level = parseInt(localStorage.getItem('neonGridlock_storyLevel')) || 1;
             score = parseInt(localStorage.getItem('neonGridlock_storyScore')) || 0;
+            document.getElementById('label-record').innerText = "MELHOR FASE";
+            document.getElementById('best-score').innerText = recordStoryLevel;
+            document.getElementById('best-level').style.display = "block";
+            document.getElementById('best-level').innerText = "STORY";
         }
 
         setupLevel();
@@ -420,6 +409,13 @@
         if(gameMode === 'story') {
             localStorage.setItem('neonGridlock_storyLevel', level);
             localStorage.setItem('neonGridlock_storyScore', score);
+            
+            // Atualiza recorde de fase se necessário
+            if(level > recordStoryLevel) {
+                recordStoryLevel = level;
+                localStorage.setItem('neonGridlock_bestLevel', recordStoryLevel);
+                document.getElementById('best-score').innerText = recordStoryLevel;
+            }
         }
 
         const types = ["⭐", "🔥", "⚡"];
@@ -434,7 +430,6 @@
             for(let i=0; i<num; i++) missions[types[i]] = { current: 0, goal: goal };
         }
         
-        if(level > bestLevel) { bestLevel = level; localStorage.setItem('neonGridlock_bestLevel', bestLevel); document.getElementById('best-level').innerText = `FASE ${bestLevel}`; }
         document.getElementById('level-txt').innerText = `FASE ${level}`;
 
         inTransition = false;
@@ -469,7 +464,16 @@
     function updateUI() {
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
-        if(score > bestScore) { bestScore = score; localStorage.setItem('neonGridlock_bestScore', bestScore); document.getElementById('best-score').innerText = bestScore; }
+        
+        // SISTEMA DE ATUALIZAÇÃO DE RECORDES EM TEMPO REAL
+        if(gameMode === 'record') {
+            if(score > recordInfinite) { 
+                recordInfinite = score; 
+                localStorage.setItem('neonGridlock_recordInfinite', recordInfinite); 
+                document.getElementById('best-score').innerText = recordInfinite; 
+            }
+        }
+
         const container = document.getElementById('mission-container');
         container.innerHTML = '';
         Object.keys(missions).forEach(t => {
@@ -538,7 +542,10 @@
         if (!ok && pieces.some(p => p !== null)) { 
             isGameOver = true; 
             document.getElementById('game-over').style.display = 'flex'; 
-            document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><br><span style="color:#ffd700">RECORDE: ${bestScore}</span>`; 
+            
+            // Exibição personalizada no Game Over
+            let recTxt = gameMode === 'record' ? `RECORDE ATUAL: ${recordInfinite}` : `MELHOR FASE: ${recordStoryLevel}`;
+            document.getElementById('final-stats').innerHTML = `PONTOS: ${score}<br>NÍVEL: ${level}<br><br><span style="color:#ffd700">${recTxt}</span>`; 
         }
     }
 
@@ -592,9 +599,8 @@
         }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
-        ctx.clearRect(-40,-40,400,400);
+        ctx.clearRect(-40,-40,420,420);
 
-        // --- EFEITO DE LUZ COMBO (BARRA EXTERNA) ---
         if(comboCount > 0) {
             let progress = comboTimer / comboMaxTime;
             let cColor = getComboColor();
@@ -603,29 +609,20 @@
             ctx.lineWidth = 4;
             ctx.shadowBlur = 15;
             ctx.shadowColor = cColor;
-
-            // Define o tamanho da barra que "corre" pela borda
             let beam = 340 * progress;
             let margin = (340 - beam) / 2;
-
             ctx.beginPath();
-            // Topo
             ctx.moveTo(margin, 2); ctx.lineTo(340 - margin, 2);
-            // Baixo
             ctx.moveTo(margin, 338); ctx.lineTo(340 - margin, 338);
-            // Esquerda
             ctx.moveTo(2, margin); ctx.lineTo(2, 340 - margin);
-            // Direita
             ctx.moveTo(338, margin); ctx.lineTo(338, 340 - margin);
             ctx.stroke();
             ctx.restore();
-            
             canvas.style.borderColor = cColor;
         }
 
         if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
         
-        // Desenha Grid deslocado pelo gridOffset
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; 
             ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
@@ -633,8 +630,6 @@
         }
         
         for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life <= 0) particles.splice(i, 1); }
-
-        comboTexts.forEach((ct, i) => { ctx.globalAlpha = ct.alpha; ctx.fillStyle = ct.color; ctx.font = `bold ${24 * ct.scale}px 'Segoe UI'`; ctx.textAlign = "center"; ctx.fillText(ct.text, ct.x, ct.y); ct.y -= 1; ct.alpha -= 0.02; if(ct.alpha <= 0) comboTexts.splice(i, 1); });
 
         ctx.globalAlpha = 1;
         if(dragPiece && moved) { 
@@ -655,3 +650,4 @@
 </script>
 </body>
 </html>
+
