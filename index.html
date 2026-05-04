@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Gridlock - Pro Edition</title>
+    <title>Neon Gridlock - Full Version</title>
     <style>
         :root {
             --cyan-neon: #00ffff;
@@ -218,7 +218,7 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // --- SISTEMA DE SALVAMENTO SEPARADO ---
+    // SISTEMA DE SALVAMENTO SEPARADO
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
     let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
@@ -229,6 +229,7 @@
 
     const DRAG_OFFSET_Y = 60;
 
+    // FORMAS DAS PEÇAS - INCLUINDO AS COMPLEXAS PARA FASES AVANÇADAS
     const basicShapes = [
         [[1,1],[1,1]], [[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1,0],[0,1,1]], [[1,0,0],[1,1,1]], [[1]], [[1,1]], [[1,1,1]]
     ];
@@ -409,8 +410,8 @@
             pieces[i] = p;
         }
         updateUI();
-        // Atraso para garantir que as peças apareçam antes do Game Over se não houver espaço
-        setTimeout(checkGameOver, 100);
+        // GARENTIR QUE O JOGADOR VEJA AS PEÇAS ANTES DO GAME OVER
+        setTimeout(() => { checkGameOver(); }, 100);
     }
 
     function canFitAnywhere(p) {
@@ -565,4 +566,3 @@
 </script>
 </body>
 </html>
-
