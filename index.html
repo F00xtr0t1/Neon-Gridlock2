@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Gridlock - Deluxe Edition</title>
+    <title>Neon Gridlock - Master Edition</title>
     <style>
         :root {
             --cyan-neon: #00ffff;
@@ -22,6 +22,7 @@
             transition: background 1.5s ease-in-out;
         }
 
+        /* TELA INICIAL */
         #start-screen {
             position: fixed; inset: 0;
             background: radial-gradient(circle at center, #0a2a3a 0%, #02111a 70%);
@@ -67,6 +68,7 @@
             box-shadow: 0 0 30px var(--cyan-glow); transform: scale(1.05);
         }
 
+        /* UI DO JOGO */
         #ui-container { margin: 15px 10px; text-align: center; width: 90%; max-width: 340px; z-index: 10; display: none; }
 
        .top-bar {
@@ -105,6 +107,7 @@
        .mission-item { display: flex; align-items: center; gap: 5px; font-weight: bold; }
        .done { color: #555!important; text-decoration: line-through; }
 
+        /* CANVAS */
         #gameCanvas {
             background: rgba(0, 5, 10, 0.8); border: 2px solid rgba(0, 255, 255, 0.3);
             border-radius: 12px; display: none; margin: 0 auto;
@@ -124,16 +127,17 @@
             transition: all 0.3s;
         }
 
-        /* SLOT VERMELHO AO PERDER */
+        /* SLOT VERMELHO (ANÁLISE DE DERROTA) */
        .slot.warning {
-            border-color: #ff4444 !important;
-            box-shadow: 0 0 15px rgba(255,0,0,0.4);
-            animation: pulse-red 0.5s infinite alternate;
+            border: 2px solid #ff4444 !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            animation: pulse-red 0.4s infinite alternate;
         }
 
         @keyframes pulse-red {
-            from { background: rgba(255,0,0,0.05); }
-            to { background: rgba(255,0,0,0.25); }
+            from { opacity: 0.8; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.02); }
         }
 
         #game-over {
@@ -148,6 +152,10 @@
             opacity: 0;
         }
         #level-transition.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        #level-transition h2 {
+            font-size: 40px; margin: 0; color: #fff; text-transform: uppercase;
+            text-shadow: 0 0 20px var(--cyan-neon), 0 0 40px var(--cyan-neon);
+        }
     </style>
 </head>
 <body>
@@ -188,14 +196,16 @@
 </div>
 
 <div id="game-over">
-    <h2 style="color:#ff4444; font-size:32px;">GAME OVER</h2>
+    <h2 style="color:#ff4444; font-size:32px; text-shadow: 0 0 15px rgba(255,0,0,0.5);">GAME OVER</h2>
     <p id="final-stats" style="color:#fff; text-align: center; line-height: 1.6;"></p>
     <button class="start-btn" onclick="restartGame()">TENTAR NOVAMENTE</button>
+    <button class="start-btn" onclick="exitToHome()" style="font-size: 12px; border: none;">SAIR</button>
 </div>
 
 <audio id="mainAudio" loop><source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg"></audio>
 
 <script>
+    // --- VARIÁVEIS DO MOTOR ---
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), size = 40, gridOffset = 10;
     const startCanvas = document.getElementById('start-bg-canvas'), sCtx = startCanvas.getContext('2d');
     
@@ -203,8 +213,8 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
     
-    // Variáveis do Delay
-    let gameOverTimer = null, isPendingGameOver = false;
+    // --- VARIÁVEIS DE DELAY DE MORTE ---
+    let deathTimer = null, isPendingDeath = false;
 
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
@@ -218,49 +228,43 @@
     const advancedShapes = [[[1,1,1],[1,0,0],[1,0,0]], [[1,0],[1,1],[0,1]], [[1,1,1],[1,1,1],[1,1,1]]];
     const imgAssets = {}, assetFiles = { base: 'bloco.png', base_story: 'bloco_historia.png', "⭐": 'estrela.png', "🔥": 'fogo.png', "⚡": 'raio.png' };
 
+    // --- SISTEMA DE ÁUDIO ---
     function playSound(type) {
-        if (isMuted || !audioCtx) return;
+        if (isMuted || !audioCtx || audioCtx.state === 'closed') return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
-        if(type==='select'){ osc.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.05); }
-        if(type==='place'){ osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now+0.1); }
-        if(type==='break'){ osc.type='square'; osc.frequency.setValueAtTime(300, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.2); }
-        if(type==='error'){ osc.type='sawtooth'; osc.frequency.setValueAtTime(100, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.2); }
-    }
-
-    function loadAssets(cb) {
-        let loaded = 0; const keys = Object.keys(assetFiles);
-        keys.forEach(k => { const img = new Image(); img.src = './assets/'+assetFiles[k]; img.onload = () => { imgAssets[k]=img; if(++loaded===keys.length) cb(); }; img.onerror=()=>{ if(++loaded===keys.length) cb(); }; });
-    }
-
-    function getComboColor() { return comboCount === 0 ? "#00ffff" : `hsl(${(comboCount*50)%360}, 100%, 60%)`; }
-
-    function drawBlock(cxt, type, x, y, w, h) {
-        let img = (type === 1 || type === "base") ? ((gameMode === 'story' && imgAssets.base_story) ? imgAssets.base_story : imgAssets.base) : imgAssets[type];
-        if (img && img.complete && img.naturalWidth !== 0) { cxt.drawImage(img, x, y, w, h); } 
-        else {
-            cxt.fillStyle = (type === 1 || type === "base") ? (gameMode === 'story' ? "#ffd700" : "#00ffff") : ({"⭐":"#ffff00","🔥":"#ff4400","⚡":"#00ff00"}[type] || "#00ffff");
-            cxt.shadowBlur = 10; cxt.shadowColor = cxt.fillStyle;
-            cxt.fillRect(x+2, y+2, w-4, h-4); cxt.shadowBlur = 0;
+        switch(type) {
+            case 'select': osc.frequency.setValueAtTime(800, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.05); break;
+            case 'place': osc.frequency.setValueAtTime(400, now); gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now+0.1); break;
+            case 'error': osc.type='sawtooth'; osc.frequency.setValueAtTime(100, now); gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now+0.2); break;
+            case 'rotate': osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now); osc.start(); osc.stop(now+0.1); break;
+            case 'break': osc.type='square'; osc.frequency.setValueAtTime(300+(comboCount*50), now); gain.gain.setValueAtTime(0.15, now); osc.start(); osc.stop(now+0.2); break;
         }
     }
 
+    // --- CARREGAMENTO ---
+    function loadAssets(callback) {
+        let loaded = 0; const keys = Object.keys(assetFiles);
+        keys.forEach(k => { const img = new Image(); img.src = './assets/'+assetFiles[k]; img.onload = () => { imgAssets[k]=img; if(++loaded===keys.length) callback(); }; img.onerror=()=>{ if(++loaded===keys.length) callback(); }; });
+    }
+
+    // --- LÓGICA DE JOGO ---
     function initGame(mode) {
         gameMode = mode; cancelAnimationFrame(startAnimationId);
         document.getElementById('start-screen').style.display='none'; document.getElementById('ui-container').style.display='block';
         document.getElementById('gameCanvas').style.display='block'; document.getElementById('pieces-selector-ui').style.display='flex';
-        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if(!audioCtx || audioCtx.state === 'closed') audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if(!isMuted) bgMusic.play().catch(()=>{});
-        if(gameMode === 'record') { score=0; level=1; document.getElementById('best-score').innerText = recordInfiniteScore; }
+        if(gameMode === 'record') { level=1; score=0; document.getElementById('best-score').innerText = recordInfiniteScore; }
         else { level = parseInt(localStorage.getItem('neonGridlock_story_current_level')) || 1; score = parseInt(localStorage.getItem('neonGridlock_story_current_score')) || 0; }
         setupLevel(); requestAnimationFrame(loop);
     }
 
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0)); missions = {};
-        cancelGameOverTimer();
+        cancelDeathTimer();
         const types = ["⭐", "🔥", "⚡"]; const goal = 5 + (level * 2);
         if (level < 5) missions[types[(level-1)%3]] = { current: 0, goal: goal };
         else { let n = level>=8?3:2; for(let i=0; i<n; i++) missions[types[i]] = { current: 0, goal: goal }; }
@@ -279,34 +283,42 @@
             }
             pieces[i] = p;
         }
-        updateUI(); checkGameStatus();
+        updateUI(); checkGameOverCondition();
     }
 
-    function checkGameStatus() {
+    // --- NOVA LÓGICA DE DELAY ---
+    function checkGameOverCondition() {
         let hasMove = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) hasMove = true;
-        if (!hasMove && pieces.some(p => p !== null)) startGameOverTimer();
-        else cancelGameOverTimer();
+        
+        if (!hasMove && pieces.some(p => p !== null)) {
+            triggerDeathTimer();
+        } else {
+            cancelDeathTimer();
+        }
     }
 
-    function startGameOverTimer() {
-        if (isPendingGameOver) return;
-        isPendingGameOver = true;
+    function triggerDeathTimer() {
+        if (isPendingDeath) return;
+        isPendingDeath = true;
+        // Ativa slots vermelhos para análise
         for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.add('warning');
-        gameOverTimer = setTimeout(() => {
+        
+        deathTimer = setTimeout(() => {
             isGameOver = true;
             document.getElementById('game-over').style.display = 'flex';
             document.getElementById('final-stats').innerHTML = `SCORE: ${score}<br>FASE: ${level}`;
         }, 5000);
     }
 
-    function cancelGameOverTimer() {
-        if (gameOverTimer) clearTimeout(gameOverTimer);
-        gameOverTimer = null; isPendingGameOver = false;
+    function cancelDeathTimer() {
+        if (deathTimer) clearTimeout(deathTimer);
+        deathTimer = null; isPendingDeath = false;
         for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('warning');
     }
 
     function canFitAnywhere(p) {
+        if(!p) return false;
         let tp = JSON.parse(JSON.stringify(p));
         for (let rot=0; rot<4; rot++) {
             for (let r=0; r<8; r++) for (let c=0; c<8; c++) if (canPlace(tp, r, c)) return true;
@@ -326,11 +338,11 @@
         for(let r=0; r<8; r++) if(grid[r].every(v=>v!==0)) rf.push(r);
         for(let c=0; c<8; c++) { let f=true; for(let r=0; r<8; r++) if(grid[r][c]===0) f=false; if(f) cf.push(c); }
         if(rf.length || cf.length) {
-            cancelGameOverTimer();
-            comboCount++; comboTimer = 600; playSound('break');
+            cancelDeathTimer(); // Ganhou espaço? Cancela a morte.
+            comboCount++; comboTimer = 600; playSound('break'); shakeIntensity = 8;
             const proc = (v) => { if(missions[v] && missions[v].current < missions[v].goal) missions[v].current++; };
-            rf.forEach(r => { for(let c=0; c<8; c++){ proc(grid[r][c]); grid[r][c]=0; explode(gridOffset+c*size, gridOffset+r*size, "#00ffff"); }});
-            cf.forEach(c => { for(let r=0; r<8; r++){ proc(grid[r][c]); grid[r][c]=0; explode(gridOffset+c*size, gridOffset+r*size, "#00ffff"); }});
+            rf.forEach(r => { for(let c=0; c<8; c++){ proc(grid[r][c]); explode(gridOffset+c*size, gridOffset+r*size, "#00ffff"); grid[r][c]=0; }});
+            cf.forEach(c => { for(let r=0; r<8; r++){ proc(grid[r][c]); explode(gridOffset+c*size, gridOffset+r*size, "#00ffff"); grid[r][c]=0; }});
             score += (rf.length+cf.length)*10*comboCount;
         }
         if(Object.values(missions).every(m=>m.current>=m.goal)) {
@@ -355,6 +367,17 @@
         }
     }
 
+    function drawBlock(cxt, type, x, y, w, h) {
+        let img = (type === 1 || type === "base") ? ((gameMode === 'story' && imgAssets.base_story) ? imgAssets.base_story : imgAssets.base) : imgAssets[type];
+        if (img && img.complete && img.naturalWidth !== 0) { cxt.drawImage(img, x, y, w, h); } 
+        else {
+            cxt.fillStyle = (type === 1 || type === "base") ? (gameMode === 'story' ? "#ffd700" : "#00ffff") : ({"⭐":"#ffff00","🔥":"#ff4400","⚡":"#00ff00"}[type] || "#00ffff");
+            cxt.shadowBlur = 10; cxt.shadowColor = cxt.fillStyle;
+            cxt.fillRect(x+2, y+2, w-4, h-4); cxt.shadowBlur = 0;
+        }
+    }
+
+    // --- CONTROLES TOUCH ---
     window.addEventListener('touchstart', e => {
         if(isGameOver || inTransition) return;
         const t = e.touches[0]; lastTap = Date.now(); moved = false;
@@ -376,28 +399,39 @@
             if(canPlace(dragPiece, row, col)) {
                 dragPiece.forEach((rd,i)=>rd.forEach((v,j)=>{ if(v) grid[row+i][col+j]=v; }));
                 pieces[dragIdx]=null; playSound('place'); checkLines();
-                if(pieces.every(p=>p===null)) newSet(); else checkGameStatus();
+                if(pieces.every(p=>p===null)) newSet(); else checkGameOverCondition();
             } else playSound('error');
         }
-        document.getElementById('slot'+dragIdx).style.opacity="1"; dragIdx=-1; dragPiece=null; updateUI();
+        if(dragIdx !== -1) document.getElementById('slot'+dragIdx).style.opacity="1";
+        dragIdx=-1; dragPiece=null; updateUI();
     });
 
+    // --- LOOP PRINCIPAL ---
     function loop() {
+        ctx.save();
+        if(shakeIntensity > 0) { ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeIntensity *= 0.8; }
         ctx.clearRect(0,0,340,340);
         if(comboTimer>0) comboTimer--; else comboCount=0;
+        
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset+c*size, gridOffset+r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset+c*size, gridOffset+r*size, size-1, size-1); 
         }
-        for (let i=particles.length-1; i>=0; i--) { let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.02; ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life<=0) particles.splice(i,1); }
+        
+        for (let i=particles.length-1; i>=0; i--) { 
+            let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.02; 
+            ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.fillRect(p.x, p.y, 4, 4); if(p.life<=0) particles.splice(i,1); 
+        }
+        
         ctx.globalAlpha = 1;
         if(dragPiece && moved) {
             const rct = canvas.getBoundingClientRect();
             dragPiece.forEach((rd,i)=>rd.forEach((v,j)=>{ if(v) drawBlock(ctx, v, (mX-rct.left)+(j*size)-(dragPiece[0].length*size/2), (mY-60-rct.top)+(i*size)-(dragPiece.length*size/2), size-1, size-1); }));
         }
-        requestAnimationFrame(loop);
+        ctx.restore(); requestAnimationFrame(loop);
     }
 
+    // --- TELAS E AUX ---
     function initStartAnim() {
         startCanvas.width = window.innerWidth; startCanvas.height = window.innerHeight;
         for(let i=0; i<12; i++) startBgBlocks.push({x:Math.random()*startCanvas.width, y:Math.random()*startCanvas.height, size:30, speedX:Math.random()-0.5, speedY:Math.random()-0.5});
@@ -410,8 +444,9 @@
     }
 
     function showModes() { document.getElementById('start-btn').style.display='none'; document.getElementById('mode-selection').style.display='flex'; }
-    function restartGame() { location.reload(); }
-    function toggleMute() { isMuted=!isMuted; if(isMuted) bgMusic.pause(); else bgMusic.play(); }
+    function restartGame() { setupLevel(); document.getElementById('game-over').style.display='none'; isGameOver=false; }
+    function exitToHome() { location.reload(); }
+    function toggleMute() { isMuted=!isMuted; document.getElementById('mute-btn').innerText = isMuted ? "🔇":"🔊"; if(isMuted) bgMusic.pause(); else bgMusic.play(); }
 
     window.onload = () => { loadAssets(() => { document.getElementById('start-btn').disabled=false; document.getElementById('start-btn').innerText="JOGAR"; initStartAnim(); }); };
 </script>
