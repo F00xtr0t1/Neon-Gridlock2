@@ -121,7 +121,6 @@
             background: rgba(255,255,255,0.03);
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s ease;
         }
 
        .slot.disabled {
@@ -129,21 +128,9 @@
             filter: grayscale(1) brightness(0.3);
         }
 
-        /* --- SLOT VERMELHO AO PERDER --- */
-        .slot.warning {
-            background: rgba(255, 0, 0, 0.6) !important;
-            border: 2px solid #ff0000 !important;
-            animation: pulse-red 0.4s infinite alternate;
-        }
-
-        @keyframes pulse-red {
-            from { box-shadow: 0 0 5px #ff0000; }
-            to { box-shadow: 0 0 25px #ff0000; }
-        }
-
         #game-over {
             position: fixed; inset: 0; background: rgba(2, 17, 26, 0.98);
-            z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
         }
 
         #level-transition {
@@ -231,9 +218,7 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    let isPendingDeath = false;
-    let deathTimer = null;
-
+    // SISTEMA DE RECORDES SEPARADO
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
     let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
@@ -241,6 +226,10 @@
     let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
+
+    // NOVO: Controle de Atraso do Game Over
+    let isPendingDeath = false;
+    let deathTimer = null;
 
     const DRAG_OFFSET_Y = 60;
 
@@ -420,7 +409,7 @@
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
         missions = {};
-        isPendingDeath = false;
+        isPendingDeath = false; // Reset pendência ao iniciar fase
         if(deathTimer) clearTimeout(deathTimer);
         
         if(gameMode === 'story') {
@@ -479,6 +468,17 @@
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
         
+        if(gameMode === 'record') {
+            if(score > recordInfiniteScore) { 
+                recordInfiniteScore = score;
+                recordInfiniteLevel = level;
+                localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore); 
+                localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel); 
+                document.getElementById('best-score').innerText = recordInfiniteScore; 
+                document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
+            }
+        }
+
         const container = document.getElementById('mission-container');
         container.innerHTML = '';
         Object.keys(missions).forEach(t => {
@@ -488,24 +488,11 @@
             div.innerHTML = `${t} <span>${m.current}/${m.goal}</span>`;
             container.appendChild(div);
         });
-
         for(let i=0; i<3; i++) {
-            const slot = document.getElementById('slot'+i); 
-            slot.innerHTML = '';
-            
-            // SÓ RESETA O VERMELHO SE NÃO ESTIVER EM MODO DE MORTE PENDENTE
-            if(!isPendingDeath) {
-                slot.classList.remove('warning'); 
-            }
-
+            const slot = document.getElementById('slot'+i); slot.innerHTML = '';
             slot.classList.remove('disabled');
             if(!pieces[i]) continue;
-            if(!canFitAnywhere(pieces[i])) {
-                slot.classList.add('disabled');
-                // SE O JOGO ESTÁ TRAVANDO E A PEÇA NÃO CABE, FORÇA O VERMELHO
-                if(isPendingDeath) slot.classList.add('warning');
-            }
-
+            if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled');
             const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
             const cx = cv.getContext('2d');
             const p = pieces[i], bSize = 18;
@@ -529,6 +516,10 @@
             rf.forEach(r => { for(let c=0; c<8; c++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
+            
+            // Se limpou linha, o jogador pode ter ganhado espaço, cancela morte pendente
+            isPendingDeath = false;
+            if(deathTimer) clearTimeout(deathTimer);
         }
 
         if(Object.values(missions).every(m => m.current >= m.goal)) {
@@ -557,36 +548,30 @@
     function checkGameOver() {
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        if (!ok && pieces.some(p => p !== null)) triggerDeathSequence();
-    }
-
-    function triggerDeathSequence() {
-        if(isPendingDeath) return;
-        isPendingDeath = true;
-
-        // ATIVA O VISUAL VERMELHO NOS SLOTS QUE NÃO CABEM
-        for(let i=0; i<3; i++) {
-            if(pieces[i] && !canFitAnywhere(pieces[i])) {
-                document.getElementById('slot'+i).classList.add('warning');
-            }
-        }
-
-        deathTimer = setTimeout(() => {
-            isGameOver = true; 
-            document.getElementById('game-over').style.display = 'flex'; 
+        
+        // Se não houver movimentos e houver peças, inicia contagem de morte
+        if (!ok && pieces.some(p => p !== null)) { 
+            if(isPendingDeath) return;
+            isPendingDeath = true;
             
-            let infoTexto = "";
-            if(gameMode === 'record') {
-                infoTexto = `PONTOS: ${score}<br>FASE: ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore}</span>`;
-            } else {
-                infoTexto = `PONTOS: ${score}<br>FASE: ${level}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
-            }
-            document.getElementById('final-stats').innerHTML = infoTexto; 
-        }, 3000);
+            deathTimer = setTimeout(() => {
+                isGameOver = true; 
+                document.getElementById('game-over').style.display = 'flex'; 
+                
+                let infoTexto = "";
+                if(gameMode === 'record') {
+                    infoTexto = `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore} (Fase ${recordInfiniteLevel})</span>`;
+                } else {
+                    infoTexto = `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
+                }
+                document.getElementById('final-stats').innerHTML = infoTexto; 
+            }, 5000); // ATRASO DE 5 SEGUNDOS
+        }
     }
 
     function restartGame() {
-        isGameOver = false; isPendingDeath = false;
+        isGameOver = false;
+        isPendingDeath = false;
         if(deathTimer) clearTimeout(deathTimer);
         document.getElementById('game-over').style.display = 'none';
         if(gameMode === 'record') { level = 1; score = 0; }
@@ -594,7 +579,7 @@
     }
 
     window.addEventListener('touchstart', e => {
-        if(isGameOver || inTransition || isPendingDeath) return;
+        if(isGameOver || inTransition) return;
         const t = e.touches[0]; moved = false; lastTap = Date.now();
         for(let i=0; i<3; i++) {
             const r = document.getElementById('slot'+i).getBoundingClientRect();
@@ -604,10 +589,10 @@
         }
     });
 
-    window.addEventListener('touchmove', e => { if(dragIdx === -1 || inTransition || isPendingDeath) return; moved = true; mX = e.touches[0].clientX; mY = e.touches[0].clientY; document.getElementById('slot'+dragIdx).style.opacity = "0.2"; });
+    window.addEventListener('touchmove', e => { if(dragIdx === -1 || inTransition) return; moved = true; mX = e.touches[0].clientX; mY = e.touches[0].clientY; document.getElementById('slot'+dragIdx).style.opacity = "0.2"; });
 
     window.addEventListener('touchend', () => {
-        if(dragIdx === -1 || inTransition || isPendingDeath) return;
+        if(dragIdx === -1 || inTransition) return;
         if(!moved && (Date.now() - lastTap < 250)) { pieces[dragIdx] = pieces[dragIdx][0].map((_, i) => pieces[dragIdx].map(row => row[i]).reverse()); playSound('rotate'); }
         else if(moved) {
             const rct = canvas.getBoundingClientRect();
@@ -619,14 +604,18 @@
                 if(pieces.every(p => p === null)) newSet(); else checkGameOver();
             } else { playSound('error'); }
         }
-        if(dragIdx !== -1) document.getElementById('slot'+dragIdx).style.opacity = "1";
+        document.getElementById('slot'+dragIdx).style.opacity = "1";
         dragIdx = -1; dragPiece = null; updateUI();
     });
 
     function loop() {
         if(comboCount > 0) { 
             comboTimer--; 
-            if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; document.getElementById('score').style.color = "#00ffff"; } 
+            if(comboTimer <= 0) { 
+                comboCount = 0; 
+                canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; 
+                document.getElementById('score').style.color = "#00ffff"; 
+            } 
         }
         ctx.save();
         if(shakeIntensity > 0) { const shakeX = (Math.random() - 0.5) * shakeIntensity; const shakeY = (Math.random() - 0.5) * shakeIntensity; ctx.translate(shakeX, shakeY); shakeIntensity *= 0.9; if(shakeIntensity < 0.1) shakeIntensity = 0; }
@@ -642,6 +631,7 @@
             ctx.stroke(); ctx.restore(); canvas.style.borderColor = cColor;
         }
 
+        if(comboCount >= 4) { let hue = (Date.now() / 10) % 360; ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.12)`; ctx.fillRect(gridOffset, gridOffset, 320, 320); }
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
             ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
             if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
