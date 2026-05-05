@@ -122,12 +122,13 @@
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center;
             transition: background 3s linear, border-color 3s linear, box-shadow 3s linear;
+            position: relative;
         }
 
        .slot.dying {
-            background: rgba(255, 0, 0, 0.35) !important;
-            border-color: rgba(255, 0, 0, 0.8) !important;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5) !important;
+            background: rgba(255, 0, 0, 0.4) !important;
+            border-color: rgba(255, 0, 0, 0.9) !important;
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.6) !important;
         }
 
        .slot.disabled {
@@ -225,16 +226,16 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // RECORDES SEPARADOS
+    // RECORDES
     let recordInfiniteScore = parseInt(localStorage.getItem('neonGridlock_inf_score')) || 0;
     let recordInfiniteLevel = parseInt(localStorage.getItem('neonGridlock_inf_level')) || 1;
     let recordStoryMaxLevel = parseInt(localStorage.getItem('neonGridlock_story_max_level')) || 1;
 
-    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, comboTexts = [], shakeIntensity = 0;
+    let comboCount = 0, comboTimer = 0, comboMaxTime = 600, shakeIntensity = 0;
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
-    // Controle de 3 segundos
+    // Tempo de morte (3s)
     let isPendingDeath = false;
     let deathTimer = null;
 
@@ -525,7 +526,6 @@
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
             
-            // Cancela "morte pendente" se o jogador limpar linhas
             isPendingDeath = false;
             if(deathTimer) clearTimeout(deathTimer);
             for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('dying');
@@ -562,7 +562,7 @@
             if(isPendingDeath) return;
             isPendingDeath = true;
             
-            // OS 3 SLOTS FICAM VERMELHOS (TEMPO: 3s)
+            // FICA VERMELHO MESMO COM PEÇA DENTRO (3s)
             for(let i=0; i<3; i++) {
                 document.getElementById('slot' + i).classList.add('dying');
             }
