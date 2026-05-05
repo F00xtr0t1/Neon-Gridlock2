@@ -372,7 +372,7 @@
         }
     }
 
-    // --- SISTEMA DE INTERAÇÃO DO MENU ---
+    // --- FÍSICA DO MENU (DEVAGARINHO) ---
     function handleMenuInteraction(e) {
         if (document.getElementById('start-screen').style.display === 'none') return;
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -380,7 +380,7 @@
         startBgBlocks.forEach(b => {
             const dx = b.x - clientX; const dy = b.y - clientY;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            if(dist < 100) { b.vx += dx * 0.05; b.vy += dy * 0.05; }
+            if(dist < 100) { b.vx += dx * 0.005; b.vy += dy * 0.005; }
         });
     }
 
@@ -388,22 +388,34 @@
         if (document.getElementById('start-screen').style.display === 'none') return;
         const acc = event.accelerationIncludingGravity;
         if (!acc) return;
-        startBgBlocks.forEach(b => { b.vx += acc.x * 0.1; b.vy -= acc.y * 0.1; });
+
+        const sensibilidade = 0.008; // Valor bem baixo para subir devagar
+        const limiteVelocidade = 1.0; // Velocidade máxima permitida no menu
+
+        startBgBlocks.forEach(b => { 
+            b.vx += acc.x * sensibilidade; 
+            b.vy -= acc.y * sensibilidade; 
+
+            // Cap de velocidade
+            if (b.vx > limiteVelocidade) b.vx = limiteVelocidade;
+            if (b.vx < -limiteVelocidade) b.vx = -limiteVelocidade;
+            if (b.vy > limiteVelocidade) b.vy = limiteVelocidade;
+            if (b.vy < -limiteVelocidade) b.vy = -limiteVelocidade;
+        });
     }
 
     function initStartScreenAnim() {
         startCanvas.width = window.innerWidth;
         startCanvas.height = window.innerHeight;
-        // Adicionado "base_story" na lista de blocos do fundo
         const types = ["base", "base_story", "⭐", "🔥", "⚡"];
         startBgBlocks = [];
         for(let i=0; i<15; i++) {
             startBgBlocks.push({
                 x: Math.random()*startCanvas.width, y: Math.random()*startCanvas.height,
                 size: 25+Math.random()*25, type: types[Math.floor(Math.random()*types.length)],
-                speedX: (Math.random()-0.5)*0.5, speedY: (Math.random()-0.5)*0.5,
-                angle: Math.random()*Math.PI*2, rotSpeed: (Math.random()-0.5)*0.01,
-                vx: 0, vy: 0 // Velocidades físicas
+                speedX: (Math.random()-0.5)*0.1, speedY: (Math.random()-0.5)*0.1,
+                angle: Math.random()*Math.PI*2, rotSpeed: (Math.random()-0.5)*0.005,
+                vx: 0, vy: 0 
             });
         }
         window.addEventListener('mousemove', handleMenuInteraction);
@@ -415,9 +427,11 @@
     function drawStartScreenAnim() {
         sCtx.clearRect(0,0,startCanvas.width, startCanvas.height);
         startBgBlocks.forEach(b => {
-            b.vx *= 0.95; b.vy *= 0.95; // Atrito suave
+            // Atrito alto (0.90) garante que ele pare de subir rápido
+            b.vx *= 0.90; b.vy *= 0.90; 
+
             b.x += b.speedX + b.vx; b.y += b.speedY + b.vy;
-            b.angle += b.rotSpeed + (Math.abs(b.vx)*0.01);
+            b.angle += b.rotSpeed;
 
             if(b.x > startCanvas.width+b.size) b.x = -b.size;
             if(b.x < -b.size) b.x = startCanvas.width+b.size;
@@ -517,14 +531,8 @@
     function newSet() {
         const types = Object.keys(missions);
         const currentPool = level >= 5 ? [...basicShapes,...advancedShapes] : basicShapes;
-        // Anti-travamento leve para ajudar testadores
-        let emptyCount = grid.flat().filter(v => v === 0).length;
-        
         for(let i=0; i<3; i++) {
-            let shape = currentPool[Math.floor(Math.random()*currentPool.length)];
-            if(emptyCount < 16 && i === 0) shape = [[1]]; 
-            
-            let p = JSON.parse(JSON.stringify(shape));
+            let p = JSON.parse(JSON.stringify(currentPool[Math.floor(Math.random()*currentPool.length)]));
             if(Math.random() < (level >= 5 ? 0.7 : 0.4)) {
                 let r = Math.floor(Math.random()*p.length), c = Math.floor(Math.random()*p[r].length);
                 if(p[r][c] !== 0) p[r][c] = types[Math.floor(Math.random()*types.length)];
@@ -549,17 +557,6 @@
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
         
-        if(gameMode === 'record') {
-            if(score > recordInfiniteScore) { 
-                recordInfiniteScore = score;
-                recordInfiniteLevel = level;
-                localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore); 
-                localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel); 
-                document.getElementById('best-score').innerText = recordInfiniteScore; 
-                document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
-            }
-        }
-
         const container = document.getElementById('mission-container');
         container.innerHTML = '';
         Object.keys(missions).forEach(t => {
@@ -629,7 +626,6 @@
     function checkGameOver() {
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
-        
         if (!ok && pieces.some(p => p !== null)) { 
             if(isPendingDeath) return;
             isPendingDeath = true;
@@ -637,9 +633,7 @@
             deathTimer = setTimeout(() => {
                 isGameOver = true; 
                 document.getElementById('game-over').style.display = 'flex'; 
-                let infoTexto = gameMode === 'record' ? 
-                    `PONTOS: ${score}<br>PAROU NA: FASE ${level}<br><br><span style="color:#ffd700">RECORDE: ${recordInfiniteScore}</span>` : 
-                    `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}`;
+                let infoTexto = `PONTOS: ${score}<br>FASE: ${level}`;
                 document.getElementById('final-stats').innerHTML = infoTexto; 
             }, 3000); 
         }
@@ -686,20 +680,10 @@
 
     function loop() {
         if (!isPaused) {
-            if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) { comboCount = 0; canvas.style.borderColor = "rgba(0, 255, 255, 0.3)"; } }
+            if(comboCount > 0) { comboTimer--; if(comboTimer <= 0) comboCount = 0; }
             ctx.save();
             if(shakeIntensity > 0) { ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); shakeIntensity *= 0.9; }
             ctx.clearRect(-40,-40,420,420);
-
-            if(comboCount > 0) {
-                let progress = comboTimer / comboMaxTime;
-                let cColor = getComboColor();
-                ctx.strokeStyle = cColor; ctx.lineWidth = 4;
-                let beam = 340 * progress; let margin = (340 - beam) / 2;
-                ctx.strokeRect(margin, margin, beam, beam);
-                canvas.style.borderColor = cColor;
-            }
-
             for(let r=0; r<8; r++) for(let c=0; c<8; c++) { 
                 ctx.fillStyle = "rgba(0, 255, 255, 0.05)"; ctx.fillRect(gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
                 if(grid[r][c]) drawBlock(ctx, grid[r][c], gridOffset + c*size, gridOffset + r*size, size-1, size-1); 
@@ -709,7 +693,6 @@
                 ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); 
                 if(p.life <= 0) particles.splice(i, 1); 
             }
-
             ctx.globalAlpha = 1;
             if(dragPiece && moved) { 
                 const rct = canvas.getBoundingClientRect(); 
@@ -726,3 +709,4 @@
 </script>
 </body>
 </html>
+
