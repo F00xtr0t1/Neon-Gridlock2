@@ -121,6 +121,7 @@
             background: rgba(255,255,255,0.03);
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
         }
 
        .slot.disabled {
@@ -128,9 +129,9 @@
             filter: grayscale(1) brightness(0.3);
         }
 
-        /* --- ESTILO PARA O DELAY DE MORTE --- */
+        /* --- SLOT VERMELHO AO PERDER --- */
         .slot.warning {
-            background: rgba(255, 0, 0, 0.5) !important;
+            background: rgba(255, 0, 0, 0.6) !important;
             border: 2px solid #ff0000 !important;
             animation: pulse-red 0.4s infinite alternate;
         }
@@ -230,7 +231,6 @@
     let grid = Array(8).fill().map(() => Array(8).fill(0));
     let score = 0, level = 1, isGameOver = false, inTransition = false, gameMode = 'record';
 
-    // CONTROLE DE DELAY DE MORTE
     let isPendingDeath = false;
     let deathTimer = null;
 
@@ -479,17 +479,6 @@
         document.getElementById('score').innerText = score;
         document.getElementById('score').style.color = comboCount > 0 ? getComboColor() : "#00ffff";
         
-        if(gameMode === 'record') {
-            if(score > recordInfiniteScore) { 
-                recordInfiniteScore = score;
-                recordInfiniteLevel = level;
-                localStorage.setItem('neonGridlock_inf_score', recordInfiniteScore); 
-                localStorage.setItem('neonGridlock_inf_level', recordInfiniteLevel); 
-                document.getElementById('best-score').innerText = recordInfiniteScore; 
-                document.getElementById('best-level').innerText = `FASE ${recordInfiniteLevel}`;
-            }
-        }
-
         const container = document.getElementById('mission-container');
         container.innerHTML = '';
         Object.keys(missions).forEach(t => {
@@ -499,12 +488,24 @@
             div.innerHTML = `${t} <span>${m.current}/${m.goal}</span>`;
             container.appendChild(div);
         });
+
         for(let i=0; i<3; i++) {
-            const slot = document.getElementById('slot'+i); slot.innerHTML = '';
+            const slot = document.getElementById('slot'+i); 
+            slot.innerHTML = '';
+            
+            // SÓ RESETA O VERMELHO SE NÃO ESTIVER EM MODO DE MORTE PENDENTE
+            if(!isPendingDeath) {
+                slot.classList.remove('warning'); 
+            }
+
             slot.classList.remove('disabled');
-            slot.classList.remove('warning'); 
             if(!pieces[i]) continue;
-            if(!canFitAnywhere(pieces[i])) slot.classList.add('disabled');
+            if(!canFitAnywhere(pieces[i])) {
+                slot.classList.add('disabled');
+                // SE O JOGO ESTÁ TRAVANDO E A PEÇA NÃO CABE, FORÇA O VERMELHO
+                if(isPendingDeath) slot.classList.add('warning');
+            }
+
             const cv = document.createElement('canvas'); cv.width = 80; cv.height = 80;
             const cx = cv.getContext('2d');
             const p = pieces[i], bSize = 18;
@@ -563,14 +564,13 @@
         if(isPendingDeath) return;
         isPendingDeath = true;
 
-        // Slot vermelho imediato
+        // ATIVA O VISUAL VERMELHO NOS SLOTS QUE NÃO CABEM
         for(let i=0; i<3; i++) {
             if(pieces[i] && !canFitAnywhere(pieces[i])) {
                 document.getElementById('slot'+i).classList.add('warning');
             }
         }
 
-        // Delay de 3 segundos
         deathTimer = setTimeout(() => {
             isGameOver = true; 
             document.getElementById('game-over').style.display = 'flex'; 
@@ -667,4 +667,3 @@
 </script>
 </body>
 </html>
-
