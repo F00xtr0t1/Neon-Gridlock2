@@ -121,6 +121,13 @@
             background: rgba(255,255,255,0.03);
             border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; align-items: center; justify-content: center;
+            transition: background 5s linear, border-color 5s linear, box-shadow 5s linear;
+        }
+
+       .slot.dying {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: rgba(255, 0, 0, 0.6);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
         }
 
        .slot.disabled {
@@ -227,7 +234,7 @@
     let missions = {};
     let pieces = [null, null, null], dragIdx = -1, dragPiece = null, mX = 0, mY = 0, moved = false, lastTap = 0;
 
-    // NOVO: Controle de Atraso do Game Over
+    // Controle de Atraso do Game Over
     let isPendingDeath = false;
     let deathTimer = null;
 
@@ -409,8 +416,10 @@
     function setupLevel() {
         grid = Array(8).fill().map(() => Array(8).fill(0));
         missions = {};
-        isPendingDeath = false; // Reset pendência ao iniciar fase
+        isPendingDeath = false;
         if(deathTimer) clearTimeout(deathTimer);
+        // Limpa estado visual de morte
+        for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('dying');
         
         if(gameMode === 'story') {
             localStorage.setItem('neonGridlock_story_current_level', level);
@@ -517,9 +526,10 @@
             cf.forEach(c => { for(let r=0; r<8; r++) { proc(grid[r][c]); explode(gridOffset + c*size, gridOffset + r*size, cColor); grid[r][c]=0; } });
             score += (rf.length + cf.length) * 10 * comboCount;
             
-            // Se limpou linha, o jogador pode ter ganhado espaço, cancela morte pendente
+            // Cancela morte pendente se limpar linha
             isPendingDeath = false;
             if(deathTimer) clearTimeout(deathTimer);
+            for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('dying');
         }
 
         if(Object.values(missions).every(m => m.current >= m.goal)) {
@@ -549,10 +559,12 @@
         let ok = false;
         for (let p of pieces) if (p && canFitAnywhere(p)) { ok = true; break; }
         
-        // Se não houver movimentos e houver peças, inicia contagem de morte
         if (!ok && pieces.some(p => p !== null)) { 
             if(isPendingDeath) return;
             isPendingDeath = true;
+            
+            // Adiciona classe visual de "morte vindo" nos slots
+            for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.add('dying');
             
             deathTimer = setTimeout(() => {
                 isGameOver = true; 
@@ -565,7 +577,7 @@
                     infoTexto = `NÍVEL ALCANÇADO: ${level}<br>PONTOS: ${score}<br><br><span style="color:#ffd700">MELHOR FASE: ${recordStoryMaxLevel}</span>`;
                 }
                 document.getElementById('final-stats').innerHTML = infoTexto; 
-            }, 5000); // ATRASO DE 5 SEGUNDOS
+            }, 5000); 
         }
     }
 
@@ -573,6 +585,7 @@
         isGameOver = false;
         isPendingDeath = false;
         if(deathTimer) clearTimeout(deathTimer);
+        for(let i=0; i<3; i++) document.getElementById('slot'+i).classList.remove('dying');
         document.getElementById('game-over').style.display = 'none';
         if(gameMode === 'record') { level = 1; score = 0; }
         setupLevel();
@@ -657,3 +670,4 @@
 </script>
 </body>
 </html>
+
